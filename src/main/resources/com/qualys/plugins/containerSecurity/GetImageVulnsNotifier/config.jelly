@@ -1,0 +1,318 @@
+<?jelly escape-by-default='true'?>
+<j:jelly
+        xmlns:j="jelly:core"
+        xmlns:st="jelly:stapler"
+        xmlns:d="jelly:define"
+        xmlns:l="/lib/layout"
+        xmlns:t="/lib/hudson"
+        xmlns:f="/lib/form"
+        xmlns:c="/lib/credentials">
+	    
+    <style>
+    	.excludeRadio{
+    		margin-left:105px !important;
+    	}
+    	.margin-top-10{
+    		margin-top: 10px;
+    	}
+    	.severityBlock{
+    		margin-left:45px !important;
+    	}
+        .qualys_logo{
+    		float:right;
+    	}
+    	.qualys_logo img{
+    		width:100px;
+    	}
+    	
+    	input[name=useLocalConfig], input[name=useGlobalConfig]{
+    		-webkit-appearance: radio;
+		    -moz-appearance: radio;
+		    -ms-appearance: radio;
+    	}
+        
+        .conditionTitle{
+    		 margin-bottom: -20px;
+    		 margin-top: 15px;
+    	}
+    	
+    	#severityTitle{
+    		margin-bottom: -36px;
+    	}
+    	
+    	#qidSevSection.severityBlock{
+    		margin-left: -125px !important;
+    	}
+    	
+    	#exceptionSection{
+    		margin-top: 10px;
+    	}
+    	select#excludeBy{
+    		padding:6px;
+    	}
+    	#cvssTextBox{
+    		width:9%; 
+    		min-width:45px; 
+    		max-width:50px;
+    		margin-bottom: 5px;
+    		margin-top: 5px;
+    		margin-left:2px !important;
+    	}
+    </style>
+    
+    <script type="text/javascript">
+		document.onreadystatechange = docReady;
+		document.load = docReady;
+		
+		function docReady() {
+		
+			var x = document.getElementsByName("isPotentialVulnsToBeChecked")[0];
+			if(x!==undefined)
+				x.insertAdjacentHTML('beforebegin', "&#160; &#160; &#160; &#160; &#160; &#160; &#160;" );
+			
+			x = document.getElementsByName("isExcludeConditions")[0];
+			if(x!==undefined){
+				x.insertAdjacentHTML('beforebegin', "&#160; &#160; &#160; &#160; &#160; &#160; &#160;" );
+				var e = document.createElement('div');
+				e.innerHTML = "&#160; &#160; &#160; &#160; &#160; &#160; &#160; Configure either QIDs or CVEs in below fields which should be ignored while evaluating failure conditions.";
+				var m = x.next();
+				for (var i = m.childElements().length; i &gt; 0; i--) {
+					m.removeChild(m.lastChild);
+				}
+				m.appendChild(e);
+			}
+			var checkbx1 = document.getElementsByName("useGlobalConfig")[0];
+			var checkbx2 = document.getElementsByName("useLocalConfig")[0];
+			if(!checkbx2.checked &amp;&amp; !checkbx1.checked){
+				checkbx1.checked = true;
+			}
+			document.getElementsByName("useGlobalConfig")[0].addEventListener("click", configClicked, false);
+			document.getElementsByName("useLocalConfig")[0].addEventListener("click", configClicked, false);
+			document.getElementById("excludeBy").addEventListener("change", excludeOptionChanged, true);
+			if("${instance.excludeBy}" === "cve") document.getElementById("optionCve").selected= true;
+			if("${instance.excludeBy}" === "qid") document.getElementById("optionQid").selected= true;
+			
+			document.getElementById("cvssVersion").addEventListener("change", cvssOptionChanged, true);
+			if("${instance.cvssVersion}" === "2") document.getElementById("optionCvssV2").selected= true;
+			if("${instance.cvssVersion}" === "3") document.getElementById("optionCvssV3").selected= true;		
+		};
+		
+		function cvssOptionChanged(){
+			document.getElementsByName("cvssThreshold")[0].value = "0.0";
+		}
+		
+		function excludeOptionChanged(){
+			document.getElementsByName("excludeList")[0].value = "";
+		}
+		
+		function configClicked(e){
+			var checkbx1 = document.getElementsByName("useGlobalConfig")[0];
+			var checkbx2 = document.getElementsByName("useLocalConfig")[0];
+			if(this.attributes.id.value == checkbx2.attributes.id.value){
+			    if(!checkbx2.checked){
+			    	checkbx2.checked = true;
+			    	updateOptionalBlock(this,true);
+			    }else{
+				    checkbx1.checked = false;
+				    checkbx2.checked = true;
+				    return false;
+				}
+			}
+			if(this.attributes.id.value == checkbx1.attributes.id.value){
+			    checkbx2.checked=false;
+			    updateOptionalBlock(checkbx2,true);
+			    checkbx1.checked = true;
+			    return false;
+			}
+		}
+		
+	</script>
+    
+    
+    <f:block>
+    	<div class="qualys_logo">
+			<img src="${resURL}/plugin/qualys-cs/images/logo.png" onload="docReady()" />
+		</div>
+    </f:block>
+    <f:section title="Configuration Settings">
+    	<f:optionalBlock name="useGlobalConfig" field="useGlobalConfig" title="Use Global(Jenkins) Configuration" inline="true">
+		</f:optionalBlock>
+		
+	    <f:optionalBlock name="useLocalConfig" field="useLocalConfig" title="Use Job Specific Configuration" inline="true">
+		    <f:section title="API Login">
+		    	<f:block> <div> Provide details for accessing the Qualys Container Security API.  </div> <br /> </f:block>
+				<f:entry title="API Server URL:" description="Example: https://qualysapi.qualys.com" field="apiServer">
+			        <f:textbox style="width: 50%; min-width: 320px;" />
+			    </f:entry>
+			    <f:entry field="credentialsId" title=" ${%Credentials}" help="/plugin/qualys-cs/help/credentialsId.html">
+					<c:select id="credentialsId" />
+				</f:entry>
+			    
+			    <f:optionalBlock name="useProxy" title="Use Proxy Settings" field="useProxy" inline="true">
+			    	<f:block> <div style="margin-left:30px;">
+				    	<f:entry title="Proxy Server:" field="proxyServer" description="Examples: 10.15.201.155, corp.proxyserver.company.com" help="/plugin/qualys-cs/help/proxyServer.html">
+				        	<f:textbox style="width: 50%; min-width: 320px;" />
+				    	</f:entry>
+				    	<f:entry title="Proxy Port:" field="proxyPort" help="/plugin/qualys-cs/help/proxyPort.html">
+				        	<f:textbox style="width: 15%; min-width: 80px;" />
+				    	</f:entry>
+				    	<f:entry field="proxyCredentialsId" title=" ${%Credentials}" help="/plugin/qualys-cs/help/proxyCredentialsId.html">
+							<c:select id="proxyCredentialsId" />
+						</f:entry>
+				    </div></f:block> 
+			    </f:optionalBlock>
+			    <f:validateButton title="Test Connection" progress="Testing..." method="checkConnection" with="apiServer,credentialsId,proxyServer,proxyPort,proxyCredentialsId,useProxy"/>
+			</f:section>
+			<f:section title="Data Collection">
+				<f:block> <div> Qualys vulnerability data will be collected per these settings. For each enter a value in seconds or an expression like 2*60*60 for 2 hours or 2*60 for 2 minutes. <br /> </div> 
+				    <br /><div>Frequency</div>
+				    <f:entry title="How often to check for data " field="pollingInterval" help="/plugin/qualys-cs/help/polling.html">
+					    <f:textbox style="width: 15%;" default="30"/> seconds.
+					</f:entry>
+					</f:block>
+					<f:block>
+					<div>Timeout</div>
+					<f:entry title="How long to wait for data" field="vulnsTimeout" help="/plugin/qualys-cs/help/timeout.html">
+					    <f:textbox style="width: 15%;" default="600"/> seconds.
+					</f:entry>
+				</f:block>
+			</f:section>
+		
+		<f:block>
+			<f:section title="Configure Docker Image Validation Policy">
+				<f:block> 
+				<div>Set the conditions to fail the Docker image build job. The build will fail when ANY of conditions are met. </div> <br />
+					
+					<f:block>
+						<div class="failureTitle">&#160; &#160; &#160; &#160; <b>Failure Conditions</b></div>
+				     </f:block>
+					
+					<f:block>
+						<div id="severityTitle" class="conditionTitle">&#160; &#160; &#160; &#160; &#160; &#160; &#160; By Vulnerability Severity</div> 
+			    	</f:block>
+					<f:entry  help="/plugin/qualys-cs/help/severity.html"></f:entry>
+			      	<f:block>
+				      	<div class="severityBlock" id="SeveritySection">
+					        &#160; &#160; &#160; &#160; &#160; &#160; &#160; <f:checkbox field="isSev1Vulns" title="Fail with more than " />
+					        <f:textbox field="severity1Limit" name="severity1Limit" style="width:9%; min-width:45px; max-width:50px;" default="0" /> severity 1
+					    </div>
+				      	<div class="severityBlock">
+					        &#160; &#160; &#160; &#160; &#160; &#160; &#160; <f:checkbox field="isSev2Vulns" title="Fail with more than   " />
+					        <f:textbox field="severity2Limit" name="severity2Limit" style="width:9%; min-width:45px; max-width:50px;" default="0"/> severity 2
+					    </div>
+				      	<div class="severityBlock"> 
+					        &#160; &#160; &#160; &#160; &#160; &#160; &#160; <f:checkbox field="isSev3Vulns" title="Fail with more than   " />
+					        <f:textbox field="severity3Limit" name="severity3Limit" style="width:9%; min-width:45px; max-width:50px;" default="0"/> severity 3
+					   </div>
+				      	<div class="severityBlock"> 
+					        &#160; &#160; &#160; &#160; &#160; &#160; &#160; <f:checkbox field="isSev4Vulns" title="Fail with more than   " />
+					        <f:textbox field="severity4Limit" name="severity4Limit" style="width:9%; min-width:45px; max-width:50px;" default="0"/> severity 4
+					   </div>
+					   <div class="severityBlock"> 
+					        &#160; &#160; &#160; &#160; &#160; &#160; &#160; <f:checkbox field="isSev5Vulns" title="Fail with more than   " />
+					        <f:textbox field="severity5Limit" name="severity5Limit" style="width:9%; min-width:45px; max-width:50px;" default="0"/> severity 5
+					   </div>
+					</f:block>
+					<f:entry id="blankTr"></f:entry>
+					
+					<f:block>
+						<div class="conditionTitle"> &#160; &#160; &#160; &#160; &#160; &#160; &#160; By Qualys Vulnerability Identifiers (QIDs)</div>
+					</f:block>
+					<f:entry  help="/plugin/qualys-cs/help/qids.html"></f:entry>
+			      	<f:block>
+			      		<div class="severityBlock" id="qidSection">
+					        &#160; &#160; &#160; &#160; &#160; &#160; &#160; <f:checkbox field="isFailOnQidFound" title="Fail with any of these QIDs:" />
+					        <f:textbox field="qidList" name="qidList" style="width:60%; min-width:70px;" description="Example: 179203,2331497,170560-170590" />
+					    </div>					    
+			    	</f:block>
+			    	<f:entry id="blankTr"></f:entry>
+					
+					<f:block>
+						<div class="conditionTitle">&#160; &#160; &#160; &#160; &#160; &#160; &#160; By CVEs</div>
+					</f:block>
+					<f:entry  help="/plugin/qualys-cs/help/cveids.html"></f:entry>
+					<f:block>	
+			      		<div class="severityBlock" id="cveSection">
+					        &#160; &#160; &#160; &#160; &#160; &#160; &#160; <f:checkbox field="isFailOnCVEs" title="Fail with any of these CVE Ids:" />
+					        <f:textbox field="cveList" name="cveList" style="width:60%; min-width:70px;" />
+					    </div>
+			    	</f:block>
+			    	<f:entry id="blankTr"></f:entry>
+			    	
+			    	<f:block>
+						<div class="conditionTitle">&#160; &#160; &#160; &#160; &#160; &#160; &#160; By Software Names</div>
+					</f:block>
+					<f:entry  help="/plugin/qualys-cs/help/software.html"></f:entry>
+					<f:block>	
+			      		<div class="severityBlock" id="swSection">
+					        &#160; &#160; &#160; &#160; &#160; &#160; &#160; <f:checkbox field="isFailOnSoftware" title="Fail with any of these Softwares:" />
+					        <f:textbox field="softwareList" name="softwareList" style="width:60%; min-width:70px;" />
+					    </div>
+			    	</f:block>
+			    	<f:entry id="blankTr"></f:entry>
+			    	
+			    	<f:block>
+						<div class="conditionTitle"> &#160; &#160; &#160; &#160; &#160; &#160; &#160; By CVSS score</div>					
+						<f:entry help="/plugin/qualys-cs/help/cvss.html"></f:entry>
+				      	<f:block>
+					      	<div class="severityBlock" id="SeveritySection">					      
+						      &#160; &#160; &#160; &#160; &#160; &#160; &#160; <f:checkbox field="failByCvss" name="failByCvss" title="Fail with: " />
+							        <select id="cvssVersion" name="cvssVersion" field="cvssVersion">
+								        <option value="2" id="optionCvssV2">CVSSv2</option>
+								        <option value="3" id="optionCvssV3">CVSSv3</option>
+								    </select>
+								Base score 
+								<f:textbox field="cvssThreshold" name="cvssThreshold" id="cvssTextBox" default="0.0" />
+								or above.
+						    </div>				      	
+						</f:block>
+					</f:block>					
+					<f:entry id="blankTr"></f:entry>
+			    	
+			    	<f:block><div class="margin-top-10"></div></f:block>
+			    	<f:optionalBlock name="isPotentialVulnsToBeChecked" title="Include the above conditions to Potential Vulnerabilities identified too" field="isPotentialVulnsToBeChecked" inline="true" help="/plugin/qualys-cs/help/isPotentialVulnsToBeChecked.html">
+			    	</f:optionalBlock>
+			    	
+			    	<f:block><div class="margin-top-10"></div></f:block>
+			    	<f:optionalBlock name="isExcludeConditions" title="Exclude Conditions" field="isExcludeConditions" inline="true" help="/plugin/qualys-cs/help/excludeConditions.html">
+						<f:block>	
+				      		<div class="excludeRadio">
+							    &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; <select id="excludeBy" name="excludeBy" field="excludeBy">
+							        <option value="cve" id="optionCve"> CVEs </option>
+							        <option value="qid" id="optionQid"> QIDs </option>
+							    </select>
+							    <f:textbox field="excludeList" name="excludeList" value="${instance.excludeList}" style="width:70%; min-width:100px; max-width:800px;" />
+						    </div>
+				    	</f:block>
+				    </f:optionalBlock>
+					
+			    </f:block>
+			
+			</f:section>  
+		</f:block>
+		</f:optionalBlock>
+		
+		<f:section title="Docker Images">
+			<f:block> 
+				<div>List of docker images to fetch and validate the vulnerability results for.</div> <br />
+			</f:block>
+			<f:entry field="imageIds" title="Image IDs/Image Names" help="/plugin/qualys-cs/help/imageIds.html">
+		    	<f:textbox field="imageIds" />
+		    </f:entry>
+		</f:section>
+		
+		<f:section title="Advanced Settings">
+			<f:advanced>
+				<f:entry title="Webhook URL" field="webhookUrl" help="/plugin/qualys-cs/help/webhook.html">
+		        	<f:textbox style="width: 50%; min-width: 320px;" />
+		    	</f:entry>
+			</f:advanced>
+		</f:section>
+		
+	</f:section>
+	
+	<script type="text/javascript">
+		
+	</script>
+	
+</j:jelly>
