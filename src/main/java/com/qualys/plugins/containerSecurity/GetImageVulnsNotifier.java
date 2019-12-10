@@ -128,11 +128,73 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     private final static int DEFAULT_TIMEOUT_FOR_VULNS = 600;
 
     @DataBoundConstructor
-    public GetImageVulnsNotifier(String apiServer, String credentialsId, String apiUser, String apiPass) {
-        this.apiServer = apiServer != null ? apiServer.trim() : apiServer;
-        this.credentialsId = credentialsId;
-        this.apiPass = Secret.fromString(apiPass);
-        this.apiUser = apiUser;
+    public GetImageVulnsNotifier(boolean useGlobalConfig, boolean useLocalConfig, String apiServer, String apiUser, String apiPass, String credentialsId, String pollingInterval,
+    		String vulnsTimeout, boolean isFailOnSevereVulns, int severity1Limit, int severity2Limit, int severity3Limit, int severity4Limit, int severity5Limit, boolean isSev1Vulns,
+    		boolean isSev2Vulns, boolean isSev3Vulns, boolean isSev4Vulns, boolean isSev5Vulns, String proxyServer, int proxyPort, String proxyUsername,
+    		String proxyPassword, boolean useProxy,  String proxyCredentialsId, boolean isFailOnQidFound, String qidList, boolean isFailOnCVEs, String cveList, boolean isFailOnSoftware, String softwareList, boolean isPotentialVulnsToBeChecked, String imageIds, String webhookUrl,
+    		boolean isExcludeConditions, String excludeBy, String excludeList, boolean failByCvss, String cvssVersion, String cvssThreshold) {
+		
+		if(useGlobalConfig) {
+			this.imageIds = imageIds;
+			this.useGlobalConfig = useGlobalConfig;
+        }
+        if(useLocalConfig) {
+        	this.useLocalConfig = useLocalConfig;
+        	this.imageIds = imageIds;
+        	this.apiServer = apiServer.trim();
+        	this.apiPass = Secret.fromString(apiPass);
+        	this.apiUser = apiUser;
+        	this.credentialsId = credentialsId;
+        	this.pollingInterval = pollingInterval;
+        	this.vulnsTimeout = vulnsTimeout;
+        	this.isFailOnSevereVulns = isFailOnSevereVulns;
+        	this.isSev1Vulns = isSev1Vulns;
+        	if(isSev1Vulns && severity1Limit > 0) { this.severity1Limit = severity1Limit; }
+        	this.isSev2Vulns = isSev2Vulns;
+        	if(isSev2Vulns && severity2Limit > 0) { this.severity2Limit = severity2Limit; }
+        	this.isSev3Vulns = isSev3Vulns;
+        	if(isSev3Vulns && severity3Limit > 0) { this.severity3Limit = severity3Limit; }
+        	this.isSev4Vulns = isSev4Vulns;
+        	if(isSev4Vulns && severity4Limit > 0) { this.severity4Limit = severity4Limit; }
+        	this.isSev5Vulns = isSev5Vulns;
+        	if(isSev5Vulns && severity5Limit > 0) { this.severity5Limit = severity5Limit; }
+        	this.useProxy = useProxy;
+        	if(useProxy) {
+        		this.proxyCredentialsId = proxyCredentialsId;
+        		if(proxyServer!=null && !proxyServer.isEmpty()) { this.proxyServer = proxyServer; }
+        		this.proxyPort = proxyPort;
+        		if(proxyUsername!=null && !proxyUsername.isEmpty()) { this.proxyUsername = proxyUsername; }
+        		if(proxyPassword!=null && !proxyPassword.isEmpty()) { this.proxyPassword = Secret.fromString(proxyPassword); }
+        	}
+        	this.isFailOnQidFound = isFailOnQidFound;
+        	if(isFailOnQidFound) {
+        		if(qidList != null && !StringUtils.isBlank(qidList)) { this.qidList = qidList;}
+        	}
+        	
+        	this.isFailOnCVEs = isFailOnCVEs;
+        	if(isFailOnCVEs) {
+        		if(cveList != null && !StringUtils.isBlank(cveList)) { this.cveList = cveList;}
+        	}
+        	this.isFailOnSoftware = isFailOnSoftware;
+        	if(isFailOnSoftware) {
+        		if(softwareList != null && !StringUtils.isBlank(softwareList)) { this.softwareList = softwareList;}
+        	}
+        	this.isExcludeConditions = isExcludeConditions;
+        	if(isExcludeConditions) {
+        		this.excludeBy = excludeBy;
+        		this.excludeList = excludeList;
+        	}
+        	this.isPotentialVulnsToBeChecked = isPotentialVulnsToBeChecked;
+        	
+        	if(failByCvss) {
+            	this.failByCvss = failByCvss;
+            	this.cvssVersion = cvssVersion;
+            	this.cvssThreshold = cvssThreshold;
+            }
+        }
+        if(!StringUtils.isBlank(webhookUrl)) {
+    		this.webhookUrl = webhookUrl;
+    	}
     }
 
     public GetImageVulnsNotifier() { }
@@ -141,7 +203,12 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     @DataBoundSetter
     public void setApiUser(String apiUser) {this.apiUser = apiUser;}
     
-    public String getApiPass() {return apiPass.getPlainText();}
+    public String getApiPass() { 
+    	if (apiPass != null) {
+    		return apiPass.getPlainText();
+    	}
+      return "";
+    }
     @DataBoundSetter
     public void setApiPass(String apiPass) {this.apiPass = Secret.fromString(apiPass);}
     
@@ -508,37 +575,34 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
  			taskListener.getLogger().println("Exception while reading environment variable IMAGE_ID: " + e1.getMessage());
  		}
        
-         try {
-         	if (imageIds != null && !imageIds.isEmpty()) {
-             	String[] imageList = imageIds.split(",");
-                  try {
-                 	 Item project = run.getParent();
-                 	getImageScanResult(run, taskListener,  new ArrayList<String>(Arrays.asList(imageList)), project, filePath.absolutize(), launcher);
-                  } catch(QualysEvaluationException exc) {
-                 	 throw new AbortException(exc.getMessage());
-                  } catch (Exception e) {
-                 	 throw new AbortException(e.getMessage());
-                  }
-             }else if (StringUtils.isNotBlank(imageIdCSV)) {  //for freestyle, we may need to read from env var
-            	 taskListener.getLogger().println("IMAGE_ID read from EnvVars is " + imageIdCSV);
-         		String[] imageList = imageIdCSV.split(",");
-         		try {
-         			Item project = run.getParent();
-         			getImageScanResult(run, taskListener,  new ArrayList<String>(Arrays.asList(imageList)), project, filePath.absolutize(), launcher);
-         		} catch(QualysEvaluationException exc) {
-                	 	throw new AbortException(exc.getMessage());
-                 } catch (Exception e) {
-                     //taskListener.getLogger().println("Exception in Qualys Vulnerabilities scan result: " + e.getMessage());
-                 	throw new AbortException(e.getMessage());
-                 }
-         	} else {
-         		taskListener.getLogger().println("No image ids found!");
-         		throw new AbortException("Image IDs can't be set to null or empty.");
-         	}
-         } catch (Exception e) {
-        	 taskListener.getLogger().println("Exception in Qualys Vulnerabilities scan result: " + e.getMessage());
-             
-         }
+        
+     	if (imageIds != null && !imageIds.isEmpty()) {
+         	String[] imageList = imageIds.split(",");
+              try {
+             	 Item project = run.getParent();
+             	getImageScanResult(run, taskListener,  new ArrayList<String>(Arrays.asList(imageList)), project, filePath.absolutize(), launcher);
+              } catch(QualysEvaluationException exc) {
+             	 throw new AbortException(exc.getMessage());
+              } catch (Exception e) {
+             	 throw new AbortException(e.getMessage());
+              }
+         }else if (StringUtils.isNotBlank(imageIdCSV)) {  //for freestyle, we may need to read from env var
+        	 taskListener.getLogger().println("IMAGE_ID read from EnvVars is " + imageIdCSV);
+     		String[] imageList = imageIdCSV.split(",");
+     		try {
+     			Item project = run.getParent();
+     			getImageScanResult(run, taskListener,  new ArrayList<String>(Arrays.asList(imageList)), project, filePath.absolutize(), launcher);
+     		} catch(QualysEvaluationException exc) {
+            	 	throw new AbortException(exc.getMessage());
+             } catch (Exception e) {
+                 //taskListener.getLogger().println("Exception in Qualys Vulnerabilities scan result: " + e.getMessage());
+             	throw new AbortException(e.getMessage());
+             }
+     	} else {
+     		taskListener.getLogger().println("No image ids found!");
+     		throw new AbortException("Image IDs can't be set to null or empty.");
+     	}
+         
         return;
     }
     
