@@ -203,11 +203,8 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     @DataBoundSetter
     public void setApiUser(String apiUser) {this.apiUser = apiUser;}
     
-    public String getApiPass() { 
-    	if (apiPass != null) {
-    		return apiPass.getPlainText();
-    	}
-      return "";
+    public Secret getApiPass() { 
+    	return apiPass;
     }
     @DataBoundSetter
     public void setApiPass(String apiPass) {this.apiPass = Secret.fromString(apiPass);}
@@ -216,11 +213,8 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
 	@DataBoundSetter
 	public void setProxyUsername(String proxyUsername) {this.proxyUsername = proxyUsername;}
 	
-	public String getProxyPassword() {
-		if (proxyPassword != null) {
-			return proxyPassword.getPlainText();
-		}
-		 return null;
+	public Secret getProxyPassword() {
+		return proxyPassword;
 	}
 	@DataBoundSetter
 	public void setProxyPassword(String proxyPassword) {this.proxyPassword = Secret.fromString(proxyPassword);}
