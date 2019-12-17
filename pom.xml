@@ -43,7 +43,7 @@
   </build>
 
   <name>Qualys Container Security Plugin</name>
-  <description>This plugin provides a post-build step. Use it to download and view vulnerability report on docker image produced in the build.</description>
+  <description>The Qualys Container Security Plugin empowers you to assess the docker images built in your existing CI/CD processes for vulnerabilities.</description>
   <!-- <url>https://wiki.jenkins-ci.org/display/JENKINS/TODO+Plugin</url> -->
   
 
