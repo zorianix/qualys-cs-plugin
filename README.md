@@ -1,11 +1,11 @@
-# Qualys Container Security Plugin
+# Qualys Container Scanning Connector
 
 ## About
 
-The Qualys Container Security Plugin for Jenkins empowers DevOps to assess docker images in their existing CI/CD processes with help of Qualys Container Security module. Integrating this assessment step will help you catch and eliminate docker images related flaws. This plugin supports pipeline as well as free-style projects.
+The Qualys Container Scanning Connector for Jenkins empowers DevOps to assess docker images in their existing CI/CD processes with help of Qualys Container Security(CS) module. Integrating this assessment step will help you catch and eliminate docker images related flaws. This plugin supports pipeline as well as free-style projects.
 
 ## How this plugin works
-Jenkins CS plugin automatically tags images built out of CI/CD pipeline with the tag qualys_scan_target:<image-id> to mark them for scanning by qualys sensor and only those images are scanned for vulnerabilities. Once the scanning is over, Qualys Container Sensor will remove the tag. However, if an image has no other tag applied to it other than 'qualys_scan_target:<image-id>', the sensor will retain the tag to avoid removal of the image from the host.
+This Qualys CS plugin/connector automatically tags images built out of CI/CD pipeline with the tag qualys_scan_target:<image-id> to mark them for scanning by Qualys sensor and only those images are scanned for vulnerabilities. Once the scanning is over, Qualys Container Sensor will remove the tag. However, if an image has no other tag applied to it other than 'qualys_scan_target:<image-id>', the sensor will retain the tag to avoid removal of the image from the host.
 The sensor uploads all the data for configured image to the Qualys platform. Qualys container Security module quickly analyzes it and responds with vulnerabilities. If you have configured any pass/fail criteria, the plugin evaluates the response against that. If it finds something is not matching your criteria, it will cause exception to fail your build. Otherwise, your build job proceeds to next step (if any). 
 
 ## How to use this plugin
