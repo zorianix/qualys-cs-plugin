@@ -1052,7 +1052,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
 
         @Override
         public String getDisplayName() {
-            return "Get Docker image vulnerabilities from Qualys";
+            return "Scan container images with Qualys CS";
         }
         
         public FormValidation doCheckCveList(@QueryParameter String cveList) {

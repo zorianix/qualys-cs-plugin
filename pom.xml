@@ -51,7 +51,7 @@
   </build>
 
   <name>Qualys Container Scanning Connector</name>
-  <description>The Qualys Container Security Plugin empowers you to assess the docker images built in your existing CI/CD processes for vulnerabilities.</description>
+  <description>The Qualys Container Scanning Connector empowers you to assess the container images built in your existing CI/CD processes for vulnerabilities.</description>
   <url>https://github.com/jenkinsci/qualys-cs-plugin</url>
   
 
