@@ -31,6 +31,15 @@
         </configuration>
       </plugin>
       
+	<plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>findbugs-maven-plugin</artifactId>
+          <version>3.0.4</version>
+          <configuration>
+            <failOnError>${maven.findbugs.failure.strict}</failOnError>
+          </configuration>
+        </plugin>
+	    
       <plugin>
       <groupId>org.codehaus.mojo</groupId>
       <artifactId>animal-sniffer-maven-plugin</artifactId>
@@ -41,8 +50,8 @@
     </plugins>
   </build>
 
-  <name>Qualys Container Security Plugin</name>
-  <description>The Qualys Container Security Plugin empowers you to assess the docker images built in your existing CI/CD processes for vulnerabilities.</description>
+  <name>Qualys Container Scanning Connector</name>
+  <description>The Qualys Container Scanning Connector empowers you to assess the container images built in your existing CI/CD processes for vulnerabilities.</description>
   <url>https://github.com/jenkinsci/qualys-cs-plugin</url>
   
 
