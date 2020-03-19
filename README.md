@@ -2,7 +2,7 @@
 
 ## About
 
-The Qualys Container Scanning Connector for Jenkins empowers DevOps to assess docker images in their existing CI/CD processes with help of Qualys Container Security(CS) module. Integrating this assessment step will help you catch and eliminate docker images related flaws. This plugin supports pipeline as well as free-style projects.
+The Qualys Container Scanning Connector for Jenkins empowers DevOps to assess container images in their existing CI/CD processes with help of Qualys Container Security(CS) module. Integrating this assessment step will help you catch and eliminate docker images related flaws. This plugin supports pipeline as well as free-style projects.
 
 ## How this plugin works
 This Qualys CS plugin/connector automatically tags images built out of CI/CD pipeline with the tag qualys_scan_target:<image-id> to mark them for scanning by Qualys sensor and only those images are scanned for vulnerabilities. Once the scanning is over, Qualys Container Sensor will remove the tag. However, if an image has no other tag applied to it other than 'qualys_scan_target:<image-id>', the sensor will retain the tag to avoid removal of the image from the host.
