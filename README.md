@@ -44,7 +44,7 @@ The field image IDs/Image Names is used to set the docker image Ids or names you
 
 You can optionally fail the build based on vulnerabilities. 
 
-1. Configure to fail a build if the number of detections exceeds the limit specified for one or more severity types. For example, to fail a build if severity 5 vulnerabilities count is more than 2, select the “Fail with more than severity 5” option and specify 2.
+1. Configure to fail a build if the number of detections exceeds the limit specified for one or more severity types. For example, to fail a build if severity 5 vulnerabilities count is more than 2, select the 'Fail with more than severity 5' option and specify 2.
 2. Configure to fail a build if the configured QIDs found in the scan result.
 3. Configure to fail a build if the configured CVEs found in the scan result.
 4. Configure to fail a build if configured softwares names are found in scan result.
