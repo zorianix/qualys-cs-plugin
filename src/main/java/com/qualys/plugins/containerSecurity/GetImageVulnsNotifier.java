@@ -142,8 +142,8 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
         	this.useLocalConfig = useLocalConfig;
         	this.imageIds = imageIds;
         	this.apiServer = apiServer.trim();
-        	this.apiPass = Secret.fromString(apiPass);
-        	this.apiUser = apiUser;
+			if(apiUser!=null && !apiUser.isEmpty()) { this.apiUser = apiUser; }
+        	if(apiPass!=null && !apiPass.isEmpty()) { this.apiPass = Secret.fromString(apiPass); }
         	this.credentialsId = credentialsId;
         	this.pollingInterval = pollingInterval;
         	this.vulnsTimeout = vulnsTimeout;
