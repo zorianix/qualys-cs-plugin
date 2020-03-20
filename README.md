@@ -25,7 +25,7 @@ We recommend using this plugin step during "Post-build" phase of your job, right
 ### Configuration
 
 If you are using pipeline, you should go to "Pipeline Syntax", and select `getImageVulnsFromQualys` step.
-If you are using freestyle, you should add `Get Docker image vulnerabilities from Qualys` build step.
+If you are using freestyle, you should add `Scan container images with Qualys CS` build step.
 
 A form appears with several input fields. Now you are ready to configure the plugin. 
 
