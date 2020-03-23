@@ -12,7 +12,7 @@ The sensor uploads all the data for configured image to the Qualys platform. Qua
 
 ### Prerequisites
 
-* A valid Qualys subscription with the Container Security application activated
+* A valid Qualys subscription with the Container Security application activated.
 * Access to Qualys Container Security application API endpoint from your build host.
 * Requires the container sensor for CI/CD environment to be installed on the jenkins build host. Refer to Qualys Container Security Sensor Deployment Guide for instructions on installing the container cicd sensor. You must pass the following parameter while deploying the sensor for CI/CD environment --cicd-deployed-sensor or -c.
 * Internet connection for slave to be able to connect to the Qualys Cloud Platform. Install sensor with proxy option if slave is running behind proxy. 
