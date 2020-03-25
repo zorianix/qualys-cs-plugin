@@ -550,9 +550,9 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     	logger.info("Triggered build #" + run.number);
     	try {
     		String version = getPluginVersion();
-    		taskListener.getLogger().println("Qualys Container Security plugin(version-" + version + ") started.");
+    		taskListener.getLogger().println("Qualys Container Scanning Connector(version-" + version + ") started.");
     	}catch(Exception e) {
-    		taskListener.getLogger().println("Qualys Container Security plugin started.");
+    		taskListener.getLogger().println("Qualys Container Scanning Connector started.");
     		logger.info("Could not read version from pom.xml. Reason: " + e.getMessage());
     	}
     	try {
