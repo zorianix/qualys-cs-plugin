@@ -225,7 +225,7 @@ public class GetImageVulns {
         	buildLogger.println("Failed to post data to webhook. Exception: " + e.getMessage());
         }
         
-        buildLogger.println("Qualys Container Security plugin finished.");
+        buildLogger.println("Qualys Container Scanning Connector - finished.");
         
     	if(!exceptionMessages.isEmpty()) {
         	throw new QualysEvaluationException(exceptionMessages.stream().collect(Collectors.joining("\n")));
