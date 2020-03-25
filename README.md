@@ -38,7 +38,7 @@ A form appears with several input fields. Now you are ready to configure the plu
 
 #### Image Id/ Image name
 
-The field image IDs/Image Names is used to set the container image Ids or names you want to report on. The plugin will only pull a report for the image Ids/names you specify. It is a comma separated list. You can also provide image ids through an environment variable.  
+The field Image IDs/Image Names is used to set the container image Ids or names you want to report on. The plugin will only pull a report for the image Ids/names you specify. It is a comma separated list. You can also provide image ids through an environment variable.  
 
 #### Pass/Fail Criteria
 
