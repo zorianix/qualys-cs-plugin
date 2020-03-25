@@ -2,7 +2,7 @@
 
 ## About
 
-The Qualys Container Scanning Connector for Jenkins empowers DevOps to assess container images in their existing CI/CD processes with help of Qualys Container Security(CS) module. Integrating this assessment step will help you catch and eliminate docker images related flaws. This plugin supports pipeline as well as free-style projects.
+The Qualys Container Scanning Connector for Jenkins empowers DevOps to assess container images in their existing CI/CD processes with help of Qualys Container Security(CS) module. Integrating this assessment step will help you catch and eliminate container images related flaws. This plugin supports pipeline as well as free-style projects.
 
 ## How this plugin works
 This Qualys CS plugin/connector automatically tags images built out of CI/CD pipeline with the tag qualys_scan_target:<image-id> to mark them for scanning by Qualys sensor and only those images are scanned for vulnerabilities. Once the scanning is over, Qualys Container Sensor will remove the tag. However, if an image has no other tag applied to it other than 'qualys_scan_target:<image-id>', the sensor will retain the tag to avoid removal of the image from the host.
@@ -20,7 +20,7 @@ The sensor uploads all the data for configured image to the Qualys platform. Qua
 
 ### Where to use this plugin step
 
-We recommend using this plugin step during "Post-build" phase of your job, right after you build a docker image. 
+We recommend using this plugin step during "Post-build" phase of your job, right after you build a container image. 
 
 ### Configuration
 
@@ -38,7 +38,7 @@ A form appears with several input fields. Now you are ready to configure the plu
 
 #### Image Id/ Image name
 
-The field image IDs/Image Names is used to set the docker image Ids or names you want to report on. The plugin will only pull a report for the image Ids/names you specify. It is a comma separated list. You can also provide image ids through an environment variable.  
+The field Image IDs/Image Names is used to set the container image Ids or names you want to report on. The plugin will only pull a report for the image Ids/names you specify. It is a comma separated list. You can also provide image ids through an environment variable.  
 
 #### Pass/Fail Criteria
 

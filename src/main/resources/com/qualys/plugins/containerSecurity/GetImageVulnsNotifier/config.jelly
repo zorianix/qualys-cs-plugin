@@ -179,9 +179,9 @@
 			</f:section>
 		
 		<f:block>
-			<f:section title="Configure Docker Image Validation Policy">
+			<f:section title="Configure Container Image Validation Policy">
 				<f:block> 
-				<div>Set the conditions to fail the Docker image build job. The build will fail when ANY of conditions are met. </div> <br />
+				<div>Set the conditions to fail the container image build job. The build will fail when ANY of conditions are met. </div> <br />
 					
 					<f:block>
 						<div class="failureTitle">&#160; &#160; &#160; &#160; <b>Failure Conditions</b></div>
@@ -292,9 +292,9 @@
 		</f:block>
 		</f:optionalBlock>
 		
-		<f:section title="Docker Images">
+		<f:section title="Container Images">
 			<f:block> 
-				<div>List of docker images to fetch and validate the vulnerability results for.</div> <br />
+				<div>List of container images to fetch and validate the vulnerability results for.</div> <br />
 			</f:block>
 			<f:entry field="imageIds" title="Image IDs/Image Names" help="/plugin/qualys-cs/help/imageIds.html">
 		    	<f:textbox field="imageIds" />

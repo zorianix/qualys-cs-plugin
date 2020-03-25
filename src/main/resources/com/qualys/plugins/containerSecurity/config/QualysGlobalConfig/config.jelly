@@ -90,9 +90,9 @@
 			
 		
 			<f:block>
-			<div class="qualys-section-header"> &#160; &#160; &#160; &#160; &#160; &#160; &#160;  Configure Docker Image Validation Policy  </div> 
+			<div class="qualys-section-header"> &#160; &#160; &#160; &#160; &#160; &#160; &#160;  Configure Container Image Validation Policy  </div> 
 				<f:block> 
-				<div>&#160; &#160; &#160; &#160; &#160; &#160; &#160;  Set the conditions to fail the Docker image build job. The build will fail when ANY of conditions are met. </div> <br />
+				<div>&#160; &#160; &#160; &#160; &#160; &#160; &#160;  Set the conditions to fail the container image build job. The build will fail when ANY of conditions are met. </div> <br />
 					
 					<f:block>
 						<div class="failureTitle">&#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; <b>Failure Conditions</b></div>
