@@ -416,16 +416,6 @@ function drawTables(reportObject){
         ]
     });   
            
-    jQuery('#softwareTable_filter input').focus(function(){
-         
-         var qidSearch = "QID=";
-         var searchInput = jQuery("#softwareTable_filter input").val();
-         if(searchInput.indexOf(qidSearch) != -1){               
-            softwareTable.columns(4).search(searchInput).draw();                
-         }            
-         
-    });
-    
      jQuery('#softwareTable_filter input').keyup(function(){
         var searchInput = jQuery("#softwareTable_filter input").val(); 
         softwareTable.columns().search('').draw(); 

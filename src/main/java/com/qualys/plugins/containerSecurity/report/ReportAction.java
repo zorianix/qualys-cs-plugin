@@ -26,16 +26,20 @@ public class ReportAction implements Action {
     private JsonObject reportObject;
     private JsonObject trendingData;
     private String imageNameInput;
+    private String portalURL;
+    private String imageSHA;
     
     public ReportAction() { }
     
     private final static Logger logger = Logger.getLogger(ReportAction.class.getName());
 
-    public ReportAction(String dockerImageId, Run<?, ?> run, PrintStream buildLogger, String imageInput) {
+    public ReportAction(String dockerImageId, Run<?, ?> run, PrintStream buildLogger, String imageInput, String portalURL, String imageSHA) {
         this.dockerImageId = dockerImageId;
         this.run = run;
         this.prevBuildNumber = 0;
         this.imageNameInput = imageInput;
+        this.portalURL = portalURL;
+        this.imageSHA = imageSHA;
     }
     
     public JsonObject getReportJsonObject() {
@@ -138,6 +142,15 @@ public class ReportAction implements Action {
     
     public String getImageId() {
     	return dockerImageId;
+    }
+    
+    public String getImageSummaryPortalURL() {
+    	if (portalURL.endsWith("/")) {
+    		return portalURL + "cs/#/assets/images/" + imageSHA;
+    	}
+    	else {
+    		return portalURL + "/cs/#/assets/images/" + imageSHA;
+    	}
     }
     
     @Override

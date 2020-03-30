@@ -142,8 +142,8 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
         	this.useLocalConfig = useLocalConfig;
         	this.imageIds = imageIds;
         	this.apiServer = apiServer.trim();
-        	this.apiPass = Secret.fromString(apiPass);
-        	this.apiUser = apiUser;
+			if(apiUser!=null && !apiUser.isEmpty()) { this.apiUser = apiUser; }
+        	if(apiPass!=null && !apiPass.isEmpty()) { this.apiPass = Secret.fromString(apiPass); }
         	this.credentialsId = credentialsId;
         	this.pollingInterval = pollingInterval;
         	this.vulnsTimeout = vulnsTimeout;
@@ -550,9 +550,9 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     	logger.info("Triggered build #" + run.number);
     	try {
     		String version = getPluginVersion();
-    		taskListener.getLogger().println("Qualys Container Security plugin(version-" + version + ") started.");
+    		taskListener.getLogger().println("Qualys Container Scanning Connector(version-" + version + ") started.");
     	}catch(Exception e) {
-    		taskListener.getLogger().println("Qualys Container Security plugin started.");
+    		taskListener.getLogger().println("Qualys Container Scanning Connector started.");
     		logger.info("Could not read version from pom.xml. Reason: " + e.getMessage());
     	}
     	try {
@@ -1052,7 +1052,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
 
         @Override
         public String getDisplayName() {
-            return "Get Docker image vulnerabilities from Qualys";
+            return "Scan container images with Qualys CS";
         }
         
         public FormValidation doCheckCveList(@QueryParameter String cveList) {
@@ -1375,7 +1375,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
             	QualysCSTestConnectionResponse resp = client.testConnection();
             	logger.info("Received response : " + resp);
             	if(!resp.success) {
-            		return FormValidation.error(resp.message);
+            		return FormValidation.error("Connection test failed; response code: "+resp.responseCode+ ". Response Message: "+resp.message);
     	   		}
             	return FormValidation.ok("Connection test successful!");
             }

@@ -3,5 +3,5 @@
   This view is used to render the installed plugins page.
 -->
 <div>
-  This Plugin allows you to get the security posture for the docker images built in Jenkins and visualize it.
+  This Plugin allows you to get the security posture for the container images built in Jenkins and visualize it.
 </div>

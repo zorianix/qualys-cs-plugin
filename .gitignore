@@ -1,2 +1,7 @@
 target/*
 .settings/*
+src/.classpath
+src/.project
+work/*
+.classpath
+.project

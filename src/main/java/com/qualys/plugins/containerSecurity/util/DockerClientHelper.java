@@ -78,7 +78,7 @@ public class DockerClientHelper {
 			throw new AbortException("Failed to extract image Id associated with '" + image + "'.");
 		}
 	}
-
+	
 	  public void tagTheImage(DockerClient dockerClient, String imageIdOrName, String imageId) {
 		  if (imageId != null ) {
 			  try {
@@ -88,6 +88,7 @@ public class DockerClientHelper {
 	    		for (StackTraceElement traceElement : e.getStackTrace())
 	                logger.info("\tat " + traceElement);
 	    		buildLogger.println("Failed to tag the image " + imageIdOrName + " with qualys_scan_target.. Reason : " + e.getMessage());
+	    		Helper.TAGGING_STATUS.add(imageId);
 			  }
 	    }
 	}
