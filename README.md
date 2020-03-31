@@ -5,13 +5,15 @@
 The Qualys Container Scanning Connector for Jenkins empowers DevOps to assess container images in their existing CI/CD processes with help of Qualys Container Security(CS) module. Integrating this assessment step will help you catch and eliminate container images related flaws. This plugin supports pipeline as well as free-style projects.
 
 ## How this plugin works
-This Qualys CS plugin/connector automatically tags images built out of CI/CD pipeline with the tag qualys_scan_target:<image-id> to mark them for scanning by Qualys sensor and only those images are scanned for vulnerabilities. Once the scanning is over, Qualys Container Sensor will remove the tag. However, if an image has no other tag applied to it other than 'qualys_scan_target:<image-id>', the sensor will retain the tag to avoid removal of the image from the host. The sensor uploads all the data for configured image to the Qualys platform. Qualys container Security module quickly analyzes it and responds with vulnerabilities. If you have configured any pass/fail criteria, the plugin evaluates the response against that. If it finds something is not matching your criteria, it will cause exception to fail your build. Otherwise, your build job proceeds to next step (if any). 
+
+This Qualys CS plugin/connector automatically tags images built out of CI/CD pipeline with the tag qualys_scan_target:<image-id> to mark them for scanning by Qualys sensor and only those images are scanned for vulnerabilities. Once the scanning is over, Qualys Container Sensor will remove the tag. However, if an image has no other tag applied to it other than 'qualys_scan_target:<image-id>', the sensor will retain the tag to avoid removal of the image from the host.
+The sensor uploads all the data for configured image to the Qualys platform. Qualys container Security module quickly analyzes it and responds with vulnerabilities. If you have configured any pass/fail criteria, the plugin evaluates the response against that. If it finds something is not matching your criteria, it will cause exception to fail your build. Otherwise, your build job proceeds to next step (if any). 
 
 ## How to use this plugin
 
 ### Prerequisites
 
-* A valid Qualys subscription with the Container Security application activated
+* A valid Qualys subscription with the Container Security application activated.
 * Access to Qualys Container Security application API endpoint from your build host.
 * Requires the container sensor for CI/CD environment to be installed on the jenkins build host. Refer to Qualys Container Security Sensor Deployment Guide for instructions on installing the container cicd sensor. You must pass the following parameter while deploying the sensor for CI/CD environment --cicd-deployed-sensor or -c.
 * Internet connection for slave to be able to connect to the Qualys Cloud Platform. Install sensor with proxy option if slave is running behind proxy. 
@@ -23,7 +25,8 @@ We recommend using this plugin step during "Post-build" phase of your job, right
 
 ### Configuration
 
-If you are using pipeline, you should go to "Pipeline Syntax", and select `getImageVulnsFromQualys` step. If you are using freestyle, you should add `Scan container images with Qualys CS` build step.
+If you are using pipeline, you should go to "Pipeline Syntax", and select `getImageVulnsFromQualys` step.
+If you are using freestyle, you should add `Scan container images with Qualys CS` build step.
 
 A form appears with several input fields. Now you are ready to configure the plugin. 
 
