@@ -105,6 +105,17 @@ public class GetImageVulnsCallable implements Callable<String> {
     	    resp = qcs.getImageDetails(imageId);
     	    logger.info("Received response code: " + resp.responseCode);
     	    
+    	    if (resp.responseCode == 404 && Helper.TAGGING_STATUS.contains(imageId)) {
+    	    	Helper.TAGGING_STATUS.remove(imageId);
+    	    	buildLogger.println("HTTP Code: "+ resp.responseCode +". Image: Not known to Qualys. Vulnerabilities: To be processed." +". API Response : " + resp.response);
+    			throw new QualysTaggingFailException("Failed to tag the image "+imageId+". Error: "+imageId+" not found");
+    		}
+
+    	    if (resp.responseCode == 400) {
+    	    	buildLogger.println("Bad request. response code: "+resp.responseCode+ " Massage: "+resp.response.get("message").toString());
+    	    	return null;
+        	}
+  	    
     	    //JP-210 -> continue polling for 5XX response code (common library returns 500 response with resp.errored=true)
     	    if(resp.responseCode >= 500 && resp.responseCode <= 599) {
     	    	buildLogger.println("HTTP Code: " + resp.responseCode + ". Image: N/A. Vulnerabilities: N/A.");
@@ -135,8 +146,11 @@ public class GetImageVulnsCallable implements Callable<String> {
 				buildLogger.println("HTTP Code: "+ resp.responseCode +". Image: Not known to Qualys. Vulnerabilities: To be processed." +". API Response : " + resp.response);
 				return null;
 			}
-    	}catch (Exception e) {
-    		logger.info("Error fetching scan report for image "+ imageId +", reason : " + e.getMessage());
+    	} catch (QualysTaggingFailException e) {
+    		buildLogger.println("Error: "+e.getMessage());
+    		throw e;
+    	} catch (Exception e) {
+     		logger.info("Error fetching scan report for image "+ imageId +", reason : " + e.getMessage());
     		buildLogger.println("Error fetching scan report for image "+ imageId +", reason : " + e.getMessage());
     	} 
     	return null;

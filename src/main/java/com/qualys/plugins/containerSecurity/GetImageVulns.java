@@ -47,6 +47,7 @@ public class GetImageVulns {
     private ProxyConfiguration proxyConfiguration;
     private JsonObject criteria;
     private QualysAuth auth;
+    private String imageSHA;
     
     private boolean buildSuccess = true;
     private final static Logger logger = Logger.getLogger(GetImageVulns.class.getName());
@@ -86,18 +87,18 @@ public class GetImageVulns {
 	    		retryCount++;
 	    		
 	    		//JP-210 retry 3 times after 5 sec delay to test connection
-	    		if(resp.success == true && resp.responseCode == 200) {
+	    		if(resp.success == true && resp.responseCode == 201) {
 		   			buildLogger.println("Test connection successful.");
 	    			logger.info("Test connection successful. Response code: " + resp.responseCode);
 	    			break;
-		   		}else if(resp.responseCode >= 500 && resp.responseCode <= 599 && retryCount < 3) {
+		   		}else if((resp.responseCode >= 500 && resp.responseCode <= 599 && retryCount < 3) || (resp.responseCode == 400 && retryCount < 3)) {
     				retry = true;
     				long secInMillis = TimeUnit.SECONDS.toMillis(5);
     				buildLogger.println("Something went wrong with server; Could be a temporary glitch. Retrying in 5 secs...");
     				Thread.sleep(secInMillis);
     				continue;
     			} else {
-	    			throw new QualysEvaluationException(resp.message);
+    				throw new QualysEvaluationException(resp.message);
 		   		}
     		}
         } catch (Exception e) {
@@ -126,6 +127,7 @@ public class GetImageVulns {
     	List<String> exceptionMessages = new ArrayList<String>();
         JsonArray trendingDataObj = new JsonArray();
         JsonObject scanReportObj = new JsonObject();
+        JsonObject imageSHA = new JsonObject();
         
         for(Map.Entry<String, String> entry : imageList.entrySet()) {
         	String imageID = entry.getKey();
@@ -151,6 +153,11 @@ public class GetImageVulns {
             	if (response != null) {
             		String scanResult = response;
         			if (!(scanResult == null || scanResult.isEmpty())) {
+        				
+        				// Added Image SHA256 for create Image summary link on report page. 
+        				JsonObject scanResultObj = gson.fromJson(scanResult, JsonObject.class);
+        				if (scanResultObj.has("sha"))
+        					imageSHA.addProperty(imageID, scanResultObj.get("sha").getAsString());
         				//evaluate scan result against criteria configured          		
             			QualysCriteria criteria2 = new QualysCriteria(criteriaString);
             			buildSuccess = criteria2.evaluate(gson.fromJson(response, JsonObject.class));
@@ -205,8 +212,15 @@ public class GetImageVulns {
         	for(Map.Entry<String, String> entry : imageList.entrySet()) {
             	String imageID = entry.getKey();
             	String originalImageStr = entry.getValue();
+            	String imageSHAStr = null;
+            	if (imageSHA.has(imageID)) {
+            		imageSHAStr = imageSHA.get(imageID).getAsString();
+            	}
+            	else {
+            		imageSHAStr = imageID;
+            	}
 	    		if (scanReportObj.has(imageID)) {
-	    			ReportAction action = new ReportAction(imageID, run, buildLogger, originalImageStr);
+	    			ReportAction action = new ReportAction(imageID, run, buildLogger, originalImageStr, auth.getPortalURL(), imageSHAStr);
 	    			run.addAction(action);
 	    		}
 	    	}

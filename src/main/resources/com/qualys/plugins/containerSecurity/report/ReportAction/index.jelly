@@ -35,6 +35,17 @@
  <script type="text/javascript" src="${resURL}/plugin/qualys-cs/js/report.js"></script>
 
 <style> 
+	.label-value_for_url{
+		font-weight:200;
+		color:red;
+	}
+	
+	.report_link_note{
+			font-weight: normal;
+		    font-size: 11px;
+		    margin-left: 90px;
+		}
+
     .status-image.vuln{
 		background: url('${resURL}/plugin/qualys-cs/images/failed-status.png') no-repeat center center;
 		height: 16px;
@@ -120,6 +131,11 @@
 					<tr>
 						<td><div class="report-title">Tags: <span id="image-tags" class="label-value"></span> </div></td>
 						<td><div class="report-title">Size: <span id="image-size" class="label-value"></span> </div> </td>
+					</tr>
+					<tr>
+						<td><div class="report-title">Scan Report: <a target="_blank" href="${it.imageSummaryPortalURL}" id="image_summary_url" class="label-value_for_url"><u style="color:blue;">Click here to view Image Summary on Qualys Portal</u></a> 
+							<br /><span class="report_link_note">Note: Valid credentials for the Qualys UI are required to view the report</span>
+						</div></td>
 					</tr>
 				</table> 
 			</div>

@@ -8,6 +8,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -18,13 +19,14 @@ import java.util.zip.ZipOutputStream;
 import org.apache.commons.lang.StringUtils;
 
 public class Helper {
-    public static String GET_IMAGE_LIST_API_PATH_FORMAT = "/csapi/v1.1/images?pageNumber=0&pageSize=10&sort=created";
-    public static String GET_SCAN_RESULT_API_PATH_FORMAT = "/csapi/v1.1/images/%s"; 
+    public static String GET_IMAGE_LIST_API_PATH_FORMAT = "/csapi/v1.2/images?pageNumber=0&pageSize=10&sort=created";
+    public static String GET_SCAN_RESULT_API_PATH_FORMAT = "/csapi/v1.2/images/%s"; 
     public static String CVE_REGEX = "CVE-\\d{4}-\\d{4,7}";
     
     public static String IMAGE_ID_REGEX = "^([A-Fa-f0-9]{12}|[A-Fa-f0-9]{64})$";
     public static String IMAGE_NAME_REGEX = "^(?:(?=[^:\\/]{4,253})(?!-)[a-zA-Z0-9-]{1,63}(?<!-)(?:\\.(?!-)[a-zA-Z0-9-]{1,63}(?<!-))*(?::[0-9]{1,5})?/)?((?![:\\/._-])(?:[a-z0-9._-]*)(?<![:\\/._-])(?:/(?![._-])[a-z0-9._-]+(?<![._-]))*)(?::(?![.-])[a-zA-Z0-9_.-]{1,128})?$";
 	public static String IMAGE_ENV_VAR = "\\$\\{(.*?)}";
+	public static List<String> TAGGING_STATUS = new ArrayList<String>();
     
     public static boolean isValidCVEList(String cveList) {
     	if(cveList != null && !StringUtils.isBlank(cveList)) {
