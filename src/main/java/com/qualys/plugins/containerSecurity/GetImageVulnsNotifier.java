@@ -1375,7 +1375,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
             	QualysCSTestConnectionResponse resp = client.testConnection();
             	logger.info("Received response : " + resp);
             	if(!resp.success) {
-            		return FormValidation.error("Connection test failed; response code: "+resp.responseCode+ ". Response Message: "+resp.message);
+            		return FormValidation.error(resp.message);
     	   		}
             	return FormValidation.ok("Connection test successful!");
             }
