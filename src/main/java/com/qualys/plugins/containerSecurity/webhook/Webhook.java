@@ -39,19 +39,18 @@ public class Webhook{
     
     private HttpClient getHttpClient() {
         HttpClient client = new HttpClient();
-        Jenkins jen = Jenkins.getInstance();
-        if (jen != null) {
-            if (proxy.getUseProxy()) {
-                client.getHostConfiguration().setProxy(proxy.getProxyServer(), proxy.getProxyPort());
-                String username = proxy.getProxyUsername();
-                String password = proxy.getProxyPassword();
-                // Consider it to be passed if username specified.
-                if (StringUtils.isNotBlank(username)) {
-                    client.getState().setProxyCredentials(AuthScope.ANY,
-                            new UsernamePasswordCredentials(username, password));
-                }
+        
+        if (proxy.getUseProxy()) {
+            client.getHostConfiguration().setProxy(proxy.getProxyServer(), proxy.getProxyPort());
+            String username = proxy.getProxyUsername();
+            String password = proxy.getProxyPassword();
+            // Consider it to be passed if username specified.
+            if (StringUtils.isNotBlank(username)) {
+                client.getState().setProxyCredentials(AuthScope.ANY,
+                        new UsernamePasswordCredentials(username, password));
             }
         }
+    
         return client;
     }
     

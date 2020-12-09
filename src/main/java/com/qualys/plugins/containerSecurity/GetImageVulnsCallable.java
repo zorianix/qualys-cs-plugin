@@ -28,12 +28,14 @@ public class GetImageVulnsCallable implements Callable<String> {
     private String buildDirPath;
     private boolean isFailConditionsConfigured;
     private QualysAuth auth;
+    private Helper helper;
     
     private final static Logger logger = Logger.getLogger(GetImageVulnsCallable.class.getName());
     
-    public GetImageVulnsCallable(String imageId, QualysCSClient qualysClient, TaskListener listener, 
+    public GetImageVulnsCallable(Helper helper, String imageId, QualysCSClient qualysClient, TaskListener listener, 
     		int pollingIntervalForVulns, int vulnsTimeout, String buildDirPath, boolean isFailConditionsConfigured, QualysAuth auth) throws AbortException {
-        this.imageId = imageId;
+        this.helper = helper;
+    	this.imageId = imageId;
         this.buildLogger = listener.getLogger();
         this.pollingIntervalForVulns = pollingIntervalForVulns;
         this.vulnsTimeout = vulnsTimeout;
@@ -105,14 +107,14 @@ public class GetImageVulnsCallable implements Callable<String> {
     	    resp = qcs.getImageDetails(imageId);
     	    logger.info("Received response code: " + resp.responseCode);
     	    
-    	    if (resp.responseCode == 404 && Helper.TAGGING_STATUS.contains(imageId)) {
-    	    	Helper.TAGGING_STATUS.remove(imageId);
+    	    if (resp.responseCode == 404 && helper.TAGGING_STATUS.contains(imageId)) {
+    	    	helper.TAGGING_STATUS.remove(imageId);
     	    	buildLogger.println("HTTP Code: "+ resp.responseCode +". Image: Not known to Qualys. Vulnerabilities: To be processed." +". API Response : " + resp.response);
     			throw new QualysTaggingFailException("Failed to tag the image "+imageId+". Error: "+imageId+" not found");
     		}
 
     	    if (resp.responseCode == 400) {
-    	    	buildLogger.println("Bad request. response code: "+resp.responseCode+ " Massage: "+resp.response.get("message").toString());
+    	    	buildLogger.println("Bad request. response code: "+resp.responseCode+ " Message: "+resp.response.get("message").toString());
     	    	return null;
         	}
   	    

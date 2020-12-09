@@ -5,6 +5,7 @@ import java.io.Serializable;
 
 import com.github.dockerjava.api.DockerClient;
 import com.qualys.plugins.containerSecurity.util.DockerClientHelper;
+import com.qualys.plugins.containerSecurity.util.Helper;
 
 import hudson.model.TaskListener;
 import jenkins.security.MasterToSlaveCallable;
@@ -16,8 +17,10 @@ public class TagImageSlaveCallable extends MasterToSlaveCallable<String, IOExcep
 	private String dockerUrl;
 	private String dockerCert;
 	private TaskListener listener;
+	private Helper helper;
 	
-	public TagImageSlaveCallable(String image, String imageId, String dockerUrl, String dockerCert, TaskListener listener) {
+	public TagImageSlaveCallable(Helper helper, String image, String imageId, String dockerUrl, String dockerCert, TaskListener listener) {
+		this.helper = helper;
 		this.image = image;
 		this.imageId = imageId;
 		this.dockerUrl = dockerUrl;
@@ -28,7 +31,7 @@ public class TagImageSlaveCallable extends MasterToSlaveCallable<String, IOExcep
 	public String call() throws IOException {
 		DockerClientHelper helper = new DockerClientHelper(listener.getLogger());
 		DockerClient dockerClient = helper.getDockerClient(dockerUrl, dockerCert);
-		helper.tagTheImage(dockerClient, image, imageId);
+		helper.tagTheImage(this.helper, dockerClient, image, imageId);
 		return "";
 	}
 }

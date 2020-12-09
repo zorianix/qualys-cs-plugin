@@ -107,7 +107,6 @@ public class QualysGlobalConfig extends GlobalConfiguration {
     @Override
     protected XmlFile getConfigFile() {
         Jenkins j = Jenkins.getInstance();
-        if (j == null) return null;
         File rootDir = j.getRootDir();
         File xmlFile = new File(rootDir, "jenkins.plugins.qualys_cs.QualysCS.xml");
         return new XmlFile(XSTREAM2, xmlFile);
@@ -436,9 +435,11 @@ public class QualysGlobalConfig extends GlobalConfiguration {
     					return FormValidation.error("Enter valid QID range");
     				}
     			} else {
-    				 int qidInt = Integer.parseInt(qid);
+    				 Integer.parseInt(qid);
     			}
     		}
+    	} catch (RuntimeException e) {
+    		return FormValidation.error("Enter valid QID range/numbers");
     	} catch(Exception e) {
     		return FormValidation.error("Enter valid QID range/numbers");
     	}
@@ -461,9 +462,11 @@ public class QualysGlobalConfig extends GlobalConfiguration {
     					return FormValidation.error("Enter valid QID range");
     				}
     			} else {
-    				 int qidInt = Integer.parseInt(qid);
+    				 Integer.parseInt(qid);
     			}
     		}
+    	} catch (RuntimeException e) {
+    		return FormValidation.error("Enter valid QID range/numbers");
     	} catch(Exception e) {
     		return FormValidation.error("Enter valid QID range/numbers");
     	}
@@ -495,6 +498,8 @@ public class QualysGlobalConfig extends GlobalConfiguration {
     		}else {
     			return FormValidation.error("Please enter a valid port number!");
     		}
+    	} catch (RuntimeException e) {
+    		return FormValidation.error("Enter valid port number!");
     	} catch(Exception e) {
     		return FormValidation.error("Enter valid port number!");
     	}
@@ -514,6 +519,8 @@ public class QualysGlobalConfig extends GlobalConfiguration {
 					return FormValidation.error("Input is not a valid number. " + e.getMessage());        				    
 				}    			
     		}
+    	} catch (RuntimeException e) {
+    		return FormValidation.error("Enter valid number!");
     	} catch(Exception e) {
     		return FormValidation.error("Enter valid number!");
     	}

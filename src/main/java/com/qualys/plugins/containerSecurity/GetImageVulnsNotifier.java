@@ -122,6 +122,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     private boolean failByCvss = false;
 	
 	private JsonObject criteriaObj;
+	private Helper helper = new Helper();
     
     private final static Logger logger = Logger.getLogger(GetImageVulnsNotifier.class.getName());
     private final static int DEFAULT_POLLING_INTERVAL_FOR_VULNS = 30;
@@ -701,7 +702,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
 	    		failConditionsObj.add("qids", empty);
 	    	}else {
 		    	List<String> qids = Arrays.asList(this.qidList.split(","));
-		    	JsonElement element = gson.toJsonTree(qids, new TypeToken<List<String>>() {}.getType());
+		    	JsonElement element = gson.toJsonTree(qids, TypeToken.getParameterized(List.class, String.class).getType()); 
 		    	failConditionsObj.add("qids", element);
 	    	}
     	}
@@ -711,7 +712,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
 	    		failConditionsObj.add("cves", empty);
 	    	}else {
 		    	List<String> cves = Arrays.asList(this.cveList.split(","));
-		    	JsonElement element2 = gson.toJsonTree(cves, new TypeToken<List<String>>() {}.getType());
+		    	JsonElement element2 = gson.toJsonTree(cves, TypeToken.getParameterized(List.class, String.class).getType()); 
 		    	failConditionsObj.add("cves", element2);
 	    	}
     	}		
@@ -731,10 +732,10 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     	JsonElement empty = new JsonArray();
 		failConditionsObj.add("software", empty);
     	if(this.isFailOnSoftware) {
-	    	if(this.softwareList != null || !this.softwareList.isEmpty()) {
+	    	if(this.softwareList != null && !this.softwareList.isEmpty()) {
 	    		List<String> softwares = Arrays.asList(this.softwareList.split(","));
 	    		softwares.replaceAll(String::trim);
-		    	JsonElement element2 = gson.toJsonTree(softwares, new TypeToken<List<String>>() {}.getType());
+		    	JsonElement element2 = gson.toJsonTree(softwares, TypeToken.getParameterized(List.class, String.class).getType()); 
 		    	failConditionsObj.add("software", element2);
 	    	}
     	}
@@ -750,13 +751,13 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     		if("cve".equals(excludeBy)) {
     			failConditionsObj.addProperty("excludeBy", "cve");
     			List<String> cves = Arrays.asList(this.excludeList.split(","));
-    	    	JsonElement element = gson.toJsonTree(cves, new TypeToken<List<String>>() {}.getType());
+    	    	JsonElement element = gson.toJsonTree(cves, TypeToken.getParameterized(List.class, String.class).getType()); 
     	    	failConditionsObj.add("excludeCVEs", element);
     		}
     		if("qid".equals(excludeBy)) {
     			failConditionsObj.addProperty("excludeBy", "qid");
     			List<String> qids = Arrays.asList(this.excludeList.split(","));
-    	    	JsonElement element = gson.toJsonTree(qids, new TypeToken<List<String>>() {}.getType());
+    	    	JsonElement element = gson.toJsonTree(qids, TypeToken.getParameterized(List.class, String.class).getType()); 
     	    	failConditionsObj.add("excludeQids", element);
     		}
     	}
@@ -821,7 +822,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
 		
 		obj.addProperty("isFailOnSoftware", this.isFailOnSoftware);
 		if(this.isFailOnSoftware) {
-			if(this.softwareList != null || !this.softwareList.isEmpty()) {
+			if(this.softwareList != null && !this.softwareList.isEmpty()) {
 	    		List<String> softwares = Arrays.asList(this.softwareList.split(","));
 	    		softwares.replaceAll(String::trim);
 	    		obj.addProperty("softwareList", String.join(", ", softwares));
@@ -846,8 +847,6 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
 		 		return;
 		 	}
 		 }
-		 
-		 List<String> imageIdList = imageList.stream().distinct().collect(Collectors.toList());
 		 
 		 //tagging images with qualys container security tag
 		 //tagImages(imageIdList, listener, launcher);
@@ -928,8 +927,8 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     					CredentialsMatchers.withId(proxyCredentialsId));
     			
     			if (credential != null) {
-    				proxyUsernameVal = (credential != null ? credential.getUsername() : "");
-                    proxyPasswordVal = (credential != null ? credential.getPassword().getPlainText() : "");
+    				proxyUsernameVal = credential.getUsername();
+                    proxyPasswordVal = credential.getPassword().getPlainText();
     			}
             }
         	auth.setProxyCredentials(proxyServer, proxyUsernameVal, proxyPasswordVal, proxyPort);
@@ -948,7 +947,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     	
     	listener.getLogger().println("Qualys task - Started fetching docker image scan results.");
         
-    	executor.getAndProcessDockerImagesScanResult(uniqueImageIdList);
+    	executor.getAndProcessDockerImagesScanResult(helper, uniqueImageIdList);
         listener.getLogger().println("Qualys task - Finished.");
     }
     
@@ -958,7 +957,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     	
     	String IMAGE_ID_REGEX = "^([A-Fa-f0-9]{12}|[A-Fa-f0-9]{64})$";
 		Pattern pattern = Pattern.compile(IMAGE_ID_REGEX);
-		listener.getLogger().println("For Image tagging, using docker url: " + dockerUrl + dockerCert != null && StringUtils.isNotBlank(dockerCert) ? " & docker Cert path : " + dockerCert + "." : "" );
+		listener.getLogger().println("For Image tagging, using docker url: " + dockerUrl + (StringUtils.isNotBlank(dockerCert) ? " & docker Cert path : " + dockerCert + "." : "") );
 		for (String OriginalImage : imageList) {
     		String image = OriginalImage.trim();
     		String imageId;
@@ -983,7 +982,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     				logger.info("Adding qualys_scan_target tag to the image " + image);
     				listener.getLogger().println("Adding qualys specific docker tag to the image " + image);
     				try {
-    					launcher.getChannel().call(new TagImageSlaveCallable(image, imageId, dockerUrl, dockerCert, listener));
+    					launcher.getChannel().call(new TagImageSlaveCallable(helper, image, imageId, dockerUrl, dockerCert, listener));
     				}catch(Exception e) {
     					e.printStackTrace(listener.getLogger());
     					throw e;
@@ -1007,7 +1006,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     			for (int i = 0; i<numbers.length ; ++i) {
     				timeoutInSecs *= Long.parseLong(numbers[i]);
     			}
-    			if(timeoutType=="polling" && timeoutInSecs < 30) {
+    			if(timeoutType.equals("polling") && timeoutInSecs < 30) {
     				listener.getLogger().println("Polling interval timeout cannot be less than 30 seconds. Using default polling interval timeout 120 seconds.");
     				return defaultTimeoutInMillis;
     			}
@@ -1041,9 +1040,9 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
 	@Symbol(value = { "getImageVulnsFromQualys" })
     public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
-        private final String URL_REGEX = "^(https?)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
-        private final String PROXY_REGEX = "^((https?)://)?[-a-zA-Z0-9+&@#/%?=~_|!,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
-        private final String TIMEOUT_PERIOD_REGEX = "^(\\d+[*]?)*(?<!\\*)$";
+        private final static String URL_REGEX = "^(https?)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
+        private final static String PROXY_REGEX = "^((https?)://)?[-a-zA-Z0-9+&@#/%?=~_|!,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
+        private final static String TIMEOUT_PERIOD_REGEX = "^(\\d+[*]?)*(?<!\\*)$";
 
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> aClass) {
@@ -1108,6 +1107,8 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     					return FormValidation.error("Input is not a valid number. " + e.getMessage());        				    
     				}        			
         		}
+        	} catch (RuntimeException e) {
+        		return FormValidation.error("Enter valid number!");
         	} catch(Exception e) {
         		return FormValidation.error("Enter valid number!");
         	}
@@ -1274,9 +1275,11 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
         					return FormValidation.error("Enter valid QID range");
         				}
         			} else {
-       				 int qidInt = Integer.parseInt(qid);
+        				Integer.parseInt(qid);
         			}
         		}
+        	} catch (RuntimeException e) {
+        		return FormValidation.error("Enter valid QID range/numbers");
         	} catch(Exception e) {
         		return FormValidation.error("Enter valid QID range/numbers");
         	}
@@ -1299,9 +1302,11 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
         					return FormValidation.error("Enter valid QID range");
         				}
         			} else {
-        				 int qidInt = Integer.parseInt(qid);
+        				Integer.parseInt(qid);
         			}
         		}
+        	} catch (RuntimeException e) {
+        		return FormValidation.error("Enter valid QID range/numbers");
         	} catch(Exception e) {
         		return FormValidation.error("Enter valid QID range/numbers");
         	}
@@ -1450,6 +1455,8 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
         		}else {
         			return FormValidation.error("Please enter a valid port number!");
         		}
+        	} catch (RuntimeException e) {
+        		return FormValidation.error("Enter valid port number!");
         	} catch(Exception e) {
         		return FormValidation.error("Enter valid port number!");
         	}
