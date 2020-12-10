@@ -6,8 +6,13 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.io.Serializable;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,15 +23,17 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.lang.StringUtils;
 
-public class Helper {
-    public static String GET_IMAGE_LIST_API_PATH_FORMAT = "/csapi/v1.2/images?pageNumber=0&pageSize=10&sort=created";
-    public static String GET_SCAN_RESULT_API_PATH_FORMAT = "/csapi/v1.2/images/%s"; 
-    public static String CVE_REGEX = "CVE-\\d{4}-\\d{4,7}";
+public class Helper implements Serializable {
+   
+	private static final long serialVersionUID = 1L;
+	public static final String GET_IMAGE_LIST_API_PATH_FORMAT = "/csapi/v1.2/images?pageNumber=0&pageSize=10&sort=created";
+    public static final String GET_SCAN_RESULT_API_PATH_FORMAT = "/csapi/v1.2/images/%s"; 
+    public static final String CVE_REGEX = "CVE-\\d{4}-\\d{4,7}";
     
-    public static String IMAGE_ID_REGEX = "^([A-Fa-f0-9]{12}|[A-Fa-f0-9]{64})$";
-    public static String IMAGE_NAME_REGEX = "^(?:(?=[^:\\/]{4,253})(?!-)[a-zA-Z0-9-]{1,63}(?<!-)(?:\\.(?!-)[a-zA-Z0-9-]{1,63}(?<!-))*(?::[0-9]{1,5})?/)?((?![:\\/._-])(?:[a-z0-9._-]*)(?<![:\\/._-])(?:/(?![._-])[a-z0-9._-]+(?<![._-]))*)(?::(?![.-])[a-zA-Z0-9_.-]{1,128})?$";
-	public static String IMAGE_ENV_VAR = "\\$\\{(.*?)}";
-	public static List<String> TAGGING_STATUS = new ArrayList<String>();
+    public static final String IMAGE_ID_REGEX = "^([A-Fa-f0-9]{12}|[A-Fa-f0-9]{64})$";
+    public static final String IMAGE_NAME_REGEX = "^(?:(?=[^:\\/]{4,253})(?!-)[a-zA-Z0-9-]{1,63}(?<!-)(?:\\.(?!-)[a-zA-Z0-9-]{1,63}(?<!-))*(?::[0-9]{1,5})?/)?((?![:\\/._-])(?:[a-z0-9._-]*)(?<![:\\/._-])(?:/(?![._-])[a-z0-9._-]+(?<![._-]))*)(?::(?![.-])[a-zA-Z0-9_.-]{1,128})?$";
+	public static final String IMAGE_ENV_VAR = "\\$\\{(.*?)}";
+	public List<String> TAGGING_STATUS = new ArrayList<String>();
     
     public static boolean isValidCVEList(String cveList) {
     	if(cveList != null && !StringUtils.isBlank(cveList)) {
@@ -45,12 +52,19 @@ public class Helper {
   	  	   	
     	 File f = new File(rootDir + File.separator + filename + ".json");
 	    if(!f.getParentFile().exists()){
-	        f.getParentFile().mkdirs();
+	        if (f.getParentFile().mkdirs()) { 
+	        	System.out.println("Directory is created"); 
+	        } 
+	        else {  
+	            System.out.println("Directory cannot be created"); 
+	        } 
 	    }
 
 	    if(!f.exists()){
 	        try {
-	            f.createNewFile();
+	            if (!f.createNewFile()) {
+	            	 buildLogger.println("File already exists or failed creating file " + filename);
+	            }
 	        } catch (Exception e) {
 	            e.printStackTrace();
 	            buildLogger.println("Failed creating file " + filename + ", reason =" + e.getMessage());
@@ -58,24 +72,31 @@ public class Helper {
 	    }
 	    try {
 	        File dir = new File(f.getParentFile(), f.getName());
-	        PrintWriter writer = new PrintWriter(dir);
+	        Writer w = new OutputStreamWriter(new FileOutputStream(dir), "UTF-8");
+	        PrintWriter writer = new PrintWriter(w);
 	        writer.print(content);
 	        writer.close();
 	    } catch (FileNotFoundException e) {
 	    	e.printStackTrace();
 	    	buildLogger.println("Failed writing to file " + filename + ", reason =" + e.getMessage());
-	    }
+	    } catch (IOException e) {
+	    	e.printStackTrace();
+	    	buildLogger.println("Failed writing to file " + filename + ", reason =" + e.getMessage());
+		}
     }
     
     public static void createZip(String zipFile, String srcDir, PrintStream buildLogger) {
-    	        
+    	       
+    	FileOutputStream fos = null;
+    	ZipOutputStream zos = null;
+    	FileInputStream fis = null;
         try {
              
             // create byte buffer
             byte[] buffer = new byte[1024];
-            FileOutputStream fos = new FileOutputStream(zipFile);
+            fos = new FileOutputStream(zipFile);
  
-            ZipOutputStream zos = new ZipOutputStream(fos);
+            zos = new ZipOutputStream(fos);
  
             File dir = new File(srcDir);
  
@@ -85,10 +106,13 @@ public class Helper {
                 	{ return filename.endsWith(".json"); }
             	} );
             
+            if (files == null) {
+            	return;
+            }
             for (int i = 0; i < files.length; i++) {
             		System.out.println("Adding file: " + files[i].getName());
             		
-            		FileInputStream fis = new FileInputStream(files[i]);
+            		fis = new FileInputStream(files[i]);
             		
             		zos.putNextEntry(new ZipEntry(files[i].getName()));
             		int length;
@@ -99,13 +123,40 @@ public class Helper {
             		
             		fis.close();
             		//delete file
-            		if(! files[i].getName().equals("qualys_images_summary.json"))
-            			files[i].delete();
+            		if(! files[i].getName().equals("qualys_images_summary.json")) {            			
+            			if (files[i].delete()) {
+            				System.out.println(files[i].getName() + " file moved to zip and deleted.");
+            			}
+            		}
             }
             zos.close();
         }
         catch (IOException ioe) {
         	buildLogger.println("Error creating zip file" + ioe);
+        }finally {
+        	if (zos != null) {
+        		try {
+					zos.close();
+				} catch (IOException e) {
+					buildLogger.println("Error creating zip file" + e);
+				}
+        	}
+        	if (fis != null) {
+        		try {
+					fis.close();
+				} catch (IOException e) {
+					buildLogger.println("Error creating zip file" + e);
+				}
+        	}
         }
+    }
+    private void writeObject(ObjectOutputStream stream)
+            throws IOException {
+        stream.defaultWriteObject();
+    }
+
+    private void readObject(ObjectInputStream stream)
+            throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
     }
 }
