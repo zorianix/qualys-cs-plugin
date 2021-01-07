@@ -6,14 +6,10 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.io.Serializable;
 import java.io.Writer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -23,7 +19,7 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.lang.StringUtils;
 
-public class Helper implements Serializable {
+public class Helper{
    
 	private static final long serialVersionUID = 1L;
 	public static final String GET_IMAGE_LIST_API_PATH_FORMAT = "/csapi/v1.2/images?pageNumber=0&pageSize=10&sort=created";
@@ -33,7 +29,7 @@ public class Helper implements Serializable {
     public static final String IMAGE_ID_REGEX = "^([A-Fa-f0-9]{12}|[A-Fa-f0-9]{64})$";
     public static final String IMAGE_NAME_REGEX = "^(?:(?=[^:\\/]{4,253})(?!-)[a-zA-Z0-9-]{1,63}(?<!-)(?:\\.(?!-)[a-zA-Z0-9-]{1,63}(?<!-))*(?::[0-9]{1,5})?/)?((?![:\\/._-])(?:[a-z0-9._-]*)(?<![:\\/._-])(?:/(?![._-])[a-z0-9._-]+(?<![._-]))*)(?::(?![.-])[a-zA-Z0-9_.-]{1,128})?$";
 	public static final String IMAGE_ENV_VAR = "\\$\\{(.*?)}";
-	public List<String> TAGGING_STATUS = new ArrayList<String>();
+	
     
     public static boolean isValidCVEList(String cveList) {
     	if(cveList != null && !StringUtils.isBlank(cveList)) {
@@ -149,14 +145,5 @@ public class Helper implements Serializable {
 				}
         	}
         }
-    }
-    private void writeObject(ObjectOutputStream stream)
-            throws IOException {
-        stream.defaultWriteObject();
-    }
-
-    private void readObject(ObjectInputStream stream)
-            throws IOException, ClassNotFoundException {
-        stream.defaultReadObject();
     }
 }

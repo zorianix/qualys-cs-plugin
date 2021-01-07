@@ -79,17 +79,19 @@ public class DockerClientHelper {
 		}
 	}
 	
-	  public void tagTheImage(Helper helper, DockerClient dockerClient, String imageIdOrName, String imageId) {
+	  public boolean tagTheImage(DockerClient dockerClient, String imageIdOrName, String imageId) {
 		  if (imageId != null ) {
 			  try {
 				dockerClient.tagImageCmd(imageIdOrName, "qualys_scan_target", imageId).withForce(true).exec();
 				buildLogger.println("Tagged image(" + imageIdOrName + ") successfully.");
+				return true;
 			  } catch(Exception e) {
 	    		for (StackTraceElement traceElement : e.getStackTrace())
 	                logger.info("\tat " + traceElement);
 	    		buildLogger.println("Failed to tag the image " + imageIdOrName + " with qualys_scan_target.. Reason : " + e.getMessage());
-	    		helper.TAGGING_STATUS.add(imageId);
+	    		return false;
 			  }
 	    }
+		  return false;
 	}
 }

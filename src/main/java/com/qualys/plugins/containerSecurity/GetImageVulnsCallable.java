@@ -3,20 +3,21 @@ package com.qualys.plugins.containerSecurity;
 import java.io.PrintStream;
 import java.net.HttpURLConnection;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import hudson.AbortException;
-import hudson.model.TaskListener;
-import qshaded.com.google.gson.JsonElement;
-import qshaded.com.google.gson.JsonObject;
-
 import com.qualys.plugins.common.QualysAuth.QualysAuth;
 import com.qualys.plugins.common.QualysClient.QualysCSClient;
 import com.qualys.plugins.common.QualysClient.QualysCSResponse;
 import com.qualys.plugins.containerSecurity.util.Helper;
+
+import hudson.AbortException;
+import hudson.model.TaskListener;
+import qshaded.com.google.gson.JsonElement;
+import qshaded.com.google.gson.JsonObject;
 
 public class GetImageVulnsCallable implements Callable<String> {
   
@@ -28,13 +29,13 @@ public class GetImageVulnsCallable implements Callable<String> {
     private String buildDirPath;
     private boolean isFailConditionsConfigured;
     private QualysAuth auth;
-    private Helper helper;
+    private ArrayList<String> taggingFailedImages;
     
     private final static Logger logger = Logger.getLogger(GetImageVulnsCallable.class.getName());
     
-    public GetImageVulnsCallable(Helper helper, String imageId, QualysCSClient qualysClient, TaskListener listener, 
+    public GetImageVulnsCallable(ArrayList<String> taggingFailedImages, String imageId, QualysCSClient qualysClient, TaskListener listener, 
     		int pollingIntervalForVulns, int vulnsTimeout, String buildDirPath, boolean isFailConditionsConfigured, QualysAuth auth) throws AbortException {
-        this.helper = helper;
+        this.taggingFailedImages = taggingFailedImages;
     	this.imageId = imageId;
         this.buildLogger = listener.getLogger();
         this.pollingIntervalForVulns = pollingIntervalForVulns;
@@ -107,8 +108,8 @@ public class GetImageVulnsCallable implements Callable<String> {
     	    resp = qcs.getImageDetails(imageId);
     	    logger.info("Received response code: " + resp.responseCode);
     	    
-    	    if (resp.responseCode == 404 && helper.TAGGING_STATUS.contains(imageId)) {
-    	    	helper.TAGGING_STATUS.remove(imageId);
+    	    if (resp.responseCode == 404 && taggingFailedImages.contains(imageId)) {
+    	    	taggingFailedImages.remove(imageId);
     	    	buildLogger.println("HTTP Code: "+ resp.responseCode +". Image: Not known to Qualys. Vulnerabilities: To be processed." +". API Response : " + resp.response);
     			throw new QualysTaggingFailException("Failed to tag the image "+imageId+". Error: "+imageId+" not found");
     		}

@@ -2,8 +2,6 @@ package com.qualys.plugins.containerSecurity;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -15,7 +13,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
@@ -33,11 +30,9 @@ import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
-import qshaded.com.google.gson.JsonObject;
-import qshaded.com.google.gson.Gson;
-import qshaded.com.google.gson.JsonArray;
-import qshaded.com.google.gson.JsonElement;
-import qshaded.com.google.gson.reflect.TypeToken;
+import com.qualys.plugins.common.QualysAuth.QualysAuth;
+import com.qualys.plugins.common.QualysClient.QualysCSClient;
+import com.qualys.plugins.common.QualysClient.QualysCSTestConnectionResponse;
 import com.qualys.plugins.containerSecurity.config.QualysGlobalConfig;
 import com.qualys.plugins.containerSecurity.model.ProxyConfiguration;
 import com.qualys.plugins.containerSecurity.util.Helper;
@@ -47,11 +42,8 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
 import hudson.model.Item;
-import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.security.ACL;
@@ -64,10 +56,11 @@ import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
-
-import com.qualys.plugins.common.QualysAuth.QualysAuth;
-import com.qualys.plugins.common.QualysClient.QualysCSClient;
-import com.qualys.plugins.common.QualysClient.QualysCSTestConnectionResponse;
+import qshaded.com.google.gson.Gson;
+import qshaded.com.google.gson.JsonArray;
+import qshaded.com.google.gson.JsonElement;
+import qshaded.com.google.gson.JsonObject;
+import qshaded.com.google.gson.reflect.TypeToken;
 
 @Extension
 public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
@@ -122,7 +115,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     private boolean failByCvss = false;
 	
 	private JsonObject criteriaObj;
-	private Helper helper = new Helper();
+	private ArrayList<String> taggingFailedImages = new ArrayList<String>();
     
     private final static Logger logger = Logger.getLogger(GetImageVulnsNotifier.class.getName());
     private final static int DEFAULT_POLLING_INTERVAL_FOR_VULNS = 30;
@@ -947,7 +940,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     	
     	listener.getLogger().println("Qualys task - Started fetching docker image scan results.");
         
-    	executor.getAndProcessDockerImagesScanResult(helper, uniqueImageIdList);
+    	executor.getAndProcessDockerImagesScanResult(uniqueImageIdList, taggingFailedImages);
         listener.getLogger().println("Qualys task - Finished.");
     }
     
@@ -958,6 +951,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     	String IMAGE_ID_REGEX = "^([A-Fa-f0-9]{12}|[A-Fa-f0-9]{64})$";
 		Pattern pattern = Pattern.compile(IMAGE_ID_REGEX);
 		listener.getLogger().println("For Image tagging, using docker url: " + dockerUrl + (StringUtils.isNotBlank(dockerCert) ? " & docker Cert path : " + dockerCert + "." : "") );
+		taggingFailedImages = new ArrayList<String>();
 		for (String OriginalImage : imageList) {
     		String image = OriginalImage.trim();
     		String imageId;
@@ -974,7 +968,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
       		} else {
       			imageId = image;
       		}
-    		
+      		
     		if (imageId != null) {
     			if (!listOfImageIds.contains(imageId)) {
     				listOfImageIds.add(imageId);
@@ -982,7 +976,10 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     				logger.info("Adding qualys_scan_target tag to the image " + image);
     				listener.getLogger().println("Adding qualys specific docker tag to the image " + image);
     				try {
-    					launcher.getChannel().call(new TagImageSlaveCallable(helper, image, imageId, dockerUrl, dockerCert, listener));
+    					Boolean isTaggingSuccess = launcher.getChannel().call(new TagImageSlaveCallable(image, imageId, dockerUrl, dockerCert, listener));
+    					if (!isTaggingSuccess) {
+    						taggingFailedImages.add(imageId);
+    					}
     				}catch(Exception e) {
     					e.printStackTrace(listener.getLogger());
     					throw e;
@@ -991,6 +988,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     			} else {
     				listener.getLogger().println(image + " has same image Id as one of the configured image: " + finalImagesList.get(imageId) + ". So processing it only once.");
     			}
+    			
     		}
     	}
     	return finalImagesList;

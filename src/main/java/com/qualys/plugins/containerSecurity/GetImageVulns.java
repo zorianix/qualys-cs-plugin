@@ -16,10 +16,10 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 
-import qshaded.com.google.gson.Gson;
-import qshaded.com.google.gson.JsonArray;
-import qshaded.com.google.gson.JsonElement;
-import qshaded.com.google.gson.JsonObject;
+import com.qualys.plugins.common.QualysAuth.QualysAuth;
+import com.qualys.plugins.common.QualysClient.QualysCSClient;
+import com.qualys.plugins.common.QualysClient.QualysCSTestConnectionResponse;
+import com.qualys.plugins.common.QualysCriteria.QualysCriteria;
 import com.qualys.plugins.containerSecurity.model.ProxyConfiguration;
 import com.qualys.plugins.containerSecurity.report.ReportAction;
 import com.qualys.plugins.containerSecurity.util.Helper;
@@ -29,11 +29,10 @@ import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-
-import com.qualys.plugins.common.QualysAuth.QualysAuth;
-import com.qualys.plugins.common.QualysClient.QualysCSClient;
-import com.qualys.plugins.common.QualysClient.QualysCSTestConnectionResponse;
-import com.qualys.plugins.common.QualysCriteria.QualysCriteria;
+import qshaded.com.google.gson.Gson;
+import qshaded.com.google.gson.JsonArray;
+import qshaded.com.google.gson.JsonElement;
+import qshaded.com.google.gson.JsonObject;
 
 public class GetImageVulns {
     private Run<?, ?> run;
@@ -47,7 +46,6 @@ public class GetImageVulns {
     private ProxyConfiguration proxyConfiguration;
     private JsonObject criteria;
     private QualysAuth auth;
-    private String imageSHA;
     
     private boolean buildSuccess = true;
     private final static Logger logger = Logger.getLogger(GetImageVulns.class.getName());
@@ -67,7 +65,7 @@ public class GetImageVulns {
         this.proxyConfiguration = proxyConfiguration;
     }
 	
-    public void getAndProcessDockerImagesScanResult(Helper helper, HashMap<String, String> imageList) throws AbortException, QualysEvaluationException {
+    public void getAndProcessDockerImagesScanResult(HashMap<String, String> imageList, ArrayList<String> taggingFailedImages) throws AbortException, QualysEvaluationException {
     	if (imageList == null || imageList.isEmpty()) {
     		return;
     	}
@@ -116,7 +114,7 @@ public class GetImageVulns {
         
         for (String imageId : imageList.keySet()) {
             //submit Callable tasks to be executed by thread pool
-        	Future<String> future = executor.submit(new GetImageVulnsCallable(helper, imageId, qualysClient, listener, 
+        	Future<String> future = executor.submit(new GetImageVulnsCallable(taggingFailedImages, imageId, qualysClient, listener, 
         			pollingIntervalForVulns, vulnsTimeout, run.getArtifactsDir().getAbsolutePath(), isFailConditionsConfigured, auth));
             //add Future to the list, we can get return value using Future
             list.put(imageId, future);
