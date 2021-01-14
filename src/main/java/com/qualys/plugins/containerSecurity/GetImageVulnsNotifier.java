@@ -115,8 +115,9 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     private boolean failByCvss = false;
 	
 	private JsonObject criteriaObj;
-	private ArrayList<String> taggingFailedImages = new ArrayList<String>();
+	private HashMap<String, String> taggingTime = new HashMap<String, String>();
     
+	
     private final static Logger logger = Logger.getLogger(GetImageVulnsNotifier.class.getName());
     private final static int DEFAULT_POLLING_INTERVAL_FOR_VULNS = 30;
     private final static int DEFAULT_TIMEOUT_FOR_VULNS = 600;
@@ -940,7 +941,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     	
     	listener.getLogger().println("Qualys task - Started fetching docker image scan results.");
         
-    	executor.getAndProcessDockerImagesScanResult(uniqueImageIdList, taggingFailedImages);
+    	executor.getAndProcessDockerImagesScanResult(uniqueImageIdList, taggingTime);
         listener.getLogger().println("Qualys task - Finished.");
     }
     
@@ -951,7 +952,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     	String IMAGE_ID_REGEX = "^([A-Fa-f0-9]{12}|[A-Fa-f0-9]{64})$";
 		Pattern pattern = Pattern.compile(IMAGE_ID_REGEX);
 		listener.getLogger().println("For Image tagging, using docker url: " + dockerUrl + (StringUtils.isNotBlank(dockerCert) ? " & docker Cert path : " + dockerCert + "." : "") );
-		taggingFailedImages = new ArrayList<String>();
+		
 		for (String OriginalImage : imageList) {
     		String image = OriginalImage.trim();
     		String imageId;
@@ -976,9 +977,9 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     				logger.info("Adding qualys_scan_target tag to the image " + image);
     				listener.getLogger().println("Adding qualys specific docker tag to the image " + image);
     				try {
-    					Boolean isTaggingSuccess = launcher.getChannel().call(new TagImageSlaveCallable(image, imageId, dockerUrl, dockerCert, listener));
-    					if (!isTaggingSuccess) {
-    						taggingFailedImages.add(imageId);
+    					String taggedTime = launcher.getChannel().call(new TagImageSlaveCallable(image, imageId, dockerUrl, dockerCert, listener));
+    					if (taggedTime != null) {
+    						taggingTime.put(imageId, taggedTime);
     					}
     				}catch(Exception e) {
     					e.printStackTrace(listener.getLogger());

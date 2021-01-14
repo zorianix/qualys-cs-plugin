@@ -9,7 +9,7 @@ import com.qualys.plugins.containerSecurity.util.DockerClientHelper;
 import hudson.model.TaskListener;
 import jenkins.security.MasterToSlaveCallable;
 
-public class TagImageSlaveCallable extends MasterToSlaveCallable<Boolean, IOException> implements Serializable{
+public class TagImageSlaveCallable extends MasterToSlaveCallable<String, IOException> implements Serializable{
 	private static final long serialVersionUID = -4143159957567745621L;
 	private String image;
 	private String imageId;
@@ -25,7 +25,7 @@ public class TagImageSlaveCallable extends MasterToSlaveCallable<Boolean, IOExce
 		this.listener = listener;
 	}
 	
-	public Boolean call() throws IOException {
+	public String call() throws IOException {
 		DockerClientHelper helper = new DockerClientHelper(listener.getLogger());
 		DockerClient dockerClient = helper.getDockerClient(dockerUrl, dockerCert);
 		return helper.tagTheImage(dockerClient, image, imageId);

@@ -65,7 +65,7 @@ public class GetImageVulns {
         this.proxyConfiguration = proxyConfiguration;
     }
 	
-    public void getAndProcessDockerImagesScanResult(HashMap<String, String> imageList, ArrayList<String> taggingFailedImages) throws AbortException, QualysEvaluationException {
+    public void getAndProcessDockerImagesScanResult(HashMap<String, String> imageList, HashMap<String, String> taggingTime) throws AbortException, QualysEvaluationException {
     	if (imageList == null || imageList.isEmpty()) {
     		return;
     	}
@@ -114,7 +114,7 @@ public class GetImageVulns {
         
         for (String imageId : imageList.keySet()) {
             //submit Callable tasks to be executed by thread pool
-        	Future<String> future = executor.submit(new GetImageVulnsCallable(taggingFailedImages, imageId, qualysClient, listener, 
+        	Future<String> future = executor.submit(new GetImageVulnsCallable(taggingTime, imageId, qualysClient, listener, 
         			pollingIntervalForVulns, vulnsTimeout, run.getArtifactsDir().getAbsolutePath(), isFailConditionsConfigured, auth));
             //add Future to the list, we can get return value using Future
             list.put(imageId, future);
@@ -129,7 +129,8 @@ public class GetImageVulns {
         JsonArray trendingDataObj = new JsonArray();
         JsonObject scanReportObj = new JsonObject();
         JsonObject imageSHA = new JsonObject();
-        
+        boolean hasAtleastOneResult = false;
+        List<String> otherExceptions = new ArrayList<String>();
         for(Map.Entry<String, String> entry : imageList.entrySet()) {
         	String imageID = entry.getKey();
         	String response = null;
@@ -139,7 +140,8 @@ public class GetImageVulns {
         		response = future.get();
         	}catch(Exception e) {
         		if (isFailConditionsConfigured) {
-        			throw new AbortException(e.getMessage());
+        			//throw new AbortException(e.getMessage());
+        			otherExceptions.add(e.getMessage());
         		}
         	}
         	
@@ -153,7 +155,7 @@ public class GetImageVulns {
         	
         		String scanResult = response;
     			if (!scanResult.isEmpty()) {
-    				
+    				hasAtleastOneResult = true;
     				// Added Image SHA256 for create Image summary link on report page. 
     				JsonObject scanResultObj = gson.fromJson(scanResult, JsonObject.class);
     				if (scanResultObj.has("sha"))
@@ -190,6 +192,13 @@ public class GetImageVulns {
             	buildLogger.println("Error while processing/evaluating scan result. Error: " + e.getMessage());
             }
         }
+        
+        if (!hasAtleastOneResult) {
+    		if(!otherExceptions.isEmpty()) {
+    			throw new AbortException(otherExceptions.stream().collect(Collectors.joining("\n")));
+    		}	
+    	}
+        
         JsonObject summaryObj = new JsonObject();
         summaryObj.add("scanResult", scanReportObj);        
         summaryObj.add("trendingData", trendingDataObj);
@@ -243,6 +252,10 @@ public class GetImageVulns {
         }
         
         buildLogger.println("Qualys Container Scanning Connector - finished.");
+        
+        if (!otherExceptions.isEmpty()) {
+        	exceptionMessages.addAll(otherExceptions);
+        }
         
     	if(!exceptionMessages.isEmpty()) {
         	throw new QualysEvaluationException(exceptionMessages.stream().collect(Collectors.joining("\n")));

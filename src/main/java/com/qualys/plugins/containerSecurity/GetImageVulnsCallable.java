@@ -4,6 +4,7 @@ import java.io.PrintStream;
 import java.net.HttpURLConnection;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -29,13 +30,14 @@ public class GetImageVulnsCallable implements Callable<String> {
     private String buildDirPath;
     private boolean isFailConditionsConfigured;
     private QualysAuth auth;
-    private ArrayList<String> taggingFailedImages;
+    private QualysCSClient qualysClient; 
+    private HashMap<String, String> taggingTime;
     
     private final static Logger logger = Logger.getLogger(GetImageVulnsCallable.class.getName());
     
-    public GetImageVulnsCallable(ArrayList<String> taggingFailedImages, String imageId, QualysCSClient qualysClient, TaskListener listener, 
+    public GetImageVulnsCallable(HashMap<String, String> taggingTime, String imageId, QualysCSClient qualysClient, TaskListener listener, 
     		int pollingIntervalForVulns, int vulnsTimeout, String buildDirPath, boolean isFailConditionsConfigured, QualysAuth auth) throws AbortException {
-        this.taggingFailedImages = taggingFailedImages;
+        this.taggingTime = taggingTime;
     	this.imageId = imageId;
         this.buildLogger = listener.getLogger();
         this.pollingIntervalForVulns = pollingIntervalForVulns;
@@ -43,6 +45,7 @@ public class GetImageVulnsCallable implements Callable<String> {
         this.buildDirPath = buildDirPath;
         this.isFailConditionsConfigured = isFailConditionsConfigured;
         this.auth = auth;
+        this.qualysClient = qualysClient;
     }
     
     @Override
@@ -68,7 +71,7 @@ public class GetImageVulnsCallable implements Callable<String> {
 	    		if ((endTime - startTime) > vulnsTimeoutInMillis) {
 	    			buildLogger.println("Failed to get scan result; timeout of " + vulnsTimeout + " seconds reached. Please check if image " + imageId + " is synced with API server.");
 	    			if (isFailConditionsConfigured) {
-	    				throw new QualysEvaluationException("Timeout reached."); 
+	    				throw new QualysEvaluationException("Timeout reached fetching scan result for image "+ imageId); 
 	    			} else {
 	    				break;
 	    			}
@@ -101,19 +104,12 @@ public class GetImageVulnsCallable implements Callable<String> {
 	private String getScanReport(String imageId) throws Exception {
 	
 	  	try {
-    		buildLogger.println(new Timestamp(System.currentTimeMillis()) + " ["+ Thread.currentThread().getName() +"] - Calling API: "+ auth.getServer() + String.format(Helper.GET_SCAN_RESULT_API_PATH_FORMAT , imageId));
+    		//buildLogger.println(new Timestamp(System.currentTimeMillis()) + " ["+ Thread.currentThread().getName() +"] - Calling API: "+ auth.getServer() + String.format(Helper.GET_SCAN_RESULT_API_PATH_FORMAT , imageId));
     	
     		QualysCSResponse resp = null;
-            QualysCSClient qcs = new QualysCSClient(auth);
-    	    resp = qcs.getImageDetails(imageId);
+            resp = qualysClient.getImages(imageId, taggingTime.get(imageId));
     	    logger.info("Received response code: " + resp.responseCode);
-    	    
-    	    if (resp.responseCode == 404 && taggingFailedImages.contains(imageId)) {
-    	    	taggingFailedImages.remove(imageId);
-    	    	buildLogger.println("HTTP Code: "+ resp.responseCode +". Image: Not known to Qualys. Vulnerabilities: To be processed." +". API Response : " + resp.response);
-    			throw new QualysTaggingFailException("Failed to tag the image "+imageId+". Error: "+imageId+" not found");
-    		}
-
+    	 
     	    if (resp.responseCode == 400) {
     	    	buildLogger.println("Bad request. response code: "+resp.responseCode+ " Message: "+resp.response.get("message").toString());
     	    	return null;
@@ -131,11 +127,14 @@ public class GetImageVulnsCallable implements Callable<String> {
         		throw new Exception("Qualys API server URL is not correct or it is not reachable. Error message: " + resp.errorMessage);
     	    }
     	    
-			buildLogger.println("Get scan result API for image " + imageId + " returned code : " + resp.responseCode + "; ");
+			//buildLogger.println("Get scan result API for image " + imageId + " returned code : " + resp.responseCode + "; ");
 			if(resp.responseCode == HttpURLConnection.HTTP_NO_CONTENT) {
 				buildLogger.println("Waiting for image data from Qualys for image id " + imageId);
+				buildLogger.println("HTTP Code: "+ resp.responseCode +". Image details for "+ imageId + " last scanned after timestamp " + taggingTime.get(imageId) + " not found yet.");
 				return null;
 			}else if(resp.responseCode == HttpURLConnection.HTTP_OK && resp.response != null) {
+				buildLogger.println("HTTP Code: "+ resp.responseCode +". Data available; Now fetching image details for imageId " + imageId);
+				resp = qualysClient.getImageDetails(imageId);
 				JsonObject jsonObj = resp.response;
 				String scanResult = jsonObj.toString();
 				JsonElement vulns = jsonObj.get("vulnerabilities");
