@@ -951,6 +951,19 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     	
     	String IMAGE_ID_REGEX = "^([A-Fa-f0-9]{12}|[A-Fa-f0-9]{64})$";
 		Pattern pattern = Pattern.compile(IMAGE_ID_REGEX);
+	
+		listener.getLogger().println("Checking if Qualys CS sensor is running on same instance using: " + dockerUrl + (StringUtils.isNotBlank(dockerCert) ? " & docker Cert path : " + dockerCert + "." : "") );
+		//Check if sensor is running on same instance where images are built and docker daemon is shared
+		boolean isCICDSensorRunning = launcher.getChannel().call(new CheckSensorSlaveCallable(dockerUrl, dockerCert, listener));
+		
+		listener.getLogger().println("*** Qualys CS sensor container is up and running!! ***");
+		
+		if(!isCICDSensorRunning) {
+			listener.getLogger().println("*** Qualys CS sensor is not deployed in CICD mode ***");
+		}else {
+			listener.getLogger().println("*** Qualys CS sensor is deployed in CICD mode ***");
+		}
+		
 		listener.getLogger().println("For Image tagging, using docker url: " + dockerUrl + (StringUtils.isNotBlank(dockerCert) ? " & docker Cert path : " + dockerCert + "." : "") );
 		
 		for (String OriginalImage : imageList) {
