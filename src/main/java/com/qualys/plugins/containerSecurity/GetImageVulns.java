@@ -65,7 +65,7 @@ public class GetImageVulns {
         this.proxyConfiguration = proxyConfiguration;
     }
 	
-    public void getAndProcessDockerImagesScanResult(HashMap<String, String> imageList, HashMap<String, String> taggingTime) throws AbortException, QualysEvaluationException {
+    public void getAndProcessDockerImagesScanResult(HashMap<String, String> imageList, long taggingTime) throws AbortException, QualysEvaluationException {
     	if (imageList == null || imageList.isEmpty()) {
     		return;
     	}

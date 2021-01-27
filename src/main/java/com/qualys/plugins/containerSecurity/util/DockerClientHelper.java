@@ -2,6 +2,7 @@ package com.qualys.plugins.containerSecurity.util;
 
 import java.io.PrintStream;
 import java.net.UnknownHostException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -82,14 +83,12 @@ public class DockerClientHelper {
 		}
 	}
 	
-	  public String tagTheImage(DockerClient dockerClient, String imageIdOrName, String imageId) throws AbortException {
+	  public void tagTheImage(DockerClient dockerClient, String imageIdOrName, String imageId) throws AbortException {
 		  
 		  if (imageId != null ) {
 			  try {
-				String taggingTime = Long.toString(System.currentTimeMillis());
 				dockerClient.tagImageCmd(imageIdOrName, "qualys_scan_target", imageId).withForce(true).exec();
-				buildLogger.println("Tagged image(" + imageIdOrName + ") successfully at timestamp " + taggingTime);
-				return taggingTime;
+				buildLogger.println("Tagged image(" + imageIdOrName + ") successfully");
 			  } catch(Exception e) {
 	    		for (StackTraceElement traceElement : e.getStackTrace())
 	                logger.info("\tat " + traceElement);
@@ -97,7 +96,6 @@ public class DockerClientHelper {
 	    		throw new AbortException("Failed to tag the image " + imageIdOrName + " with qualys_scan_target.. Reason : " + e.getMessage());
 			  }
 	    }
-		  return null;
 	}
 	  
 	  public boolean isCICDSensorUp(DockerClient dockerClient) throws AbortException {

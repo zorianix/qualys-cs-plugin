@@ -28,6 +28,7 @@ public class TagImageSlaveCallable extends MasterToSlaveCallable<String, IOExcep
 	public String call() throws IOException {
 		DockerClientHelper helper = new DockerClientHelper(listener.getLogger());
 		DockerClient dockerClient = helper.getDockerClient(dockerUrl, dockerCert);
-		return helper.tagTheImage(dockerClient, image, imageId);
+		helper.tagTheImage(dockerClient, image, imageId);
+		return "";
 	}
 }

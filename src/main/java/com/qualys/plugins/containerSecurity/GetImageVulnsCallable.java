@@ -3,6 +3,7 @@ package com.qualys.plugins.containerSecurity;
 import java.io.PrintStream;
 import java.net.HttpURLConnection;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
@@ -29,13 +30,12 @@ public class GetImageVulnsCallable implements Callable<String> {
     public Set<String> reposArray;
     private String buildDirPath;
     private boolean isFailConditionsConfigured;
-    private QualysAuth auth;
     private QualysCSClient qualysClient; 
-    private HashMap<String, String> taggingTime;
+    private long taggingTime;
     
     private final static Logger logger = Logger.getLogger(GetImageVulnsCallable.class.getName());
     
-    public GetImageVulnsCallable(HashMap<String, String> taggingTime, String imageId, QualysCSClient qualysClient, TaskListener listener, 
+    public GetImageVulnsCallable(long taggingTime, String imageId, QualysCSClient qualysClient, TaskListener listener, 
     		int pollingIntervalForVulns, int vulnsTimeout, String buildDirPath, boolean isFailConditionsConfigured, QualysAuth auth) throws AbortException {
         this.taggingTime = taggingTime;
     	this.imageId = imageId;
@@ -44,7 +44,6 @@ public class GetImageVulnsCallable implements Callable<String> {
         this.vulnsTimeout = vulnsTimeout;
         this.buildDirPath = buildDirPath;
         this.isFailConditionsConfigured = isFailConditionsConfigured;
-        this.auth = auth;
         this.qualysClient = qualysClient;
     }
     
@@ -64,9 +63,13 @@ public class GetImageVulnsCallable implements Callable<String> {
     	long startTime = System.currentTimeMillis();
     	long vulnsTimeoutInMillis = TimeUnit.SECONDS.toMillis(vulnsTimeout);
     	long pollingInMillis = TimeUnit.SECONDS.toMillis(pollingIntervalForVulns);
+    	Instant instant = Instant.now();
+		long currentTime = instant.getEpochSecond();
+		buildLogger.println("***Current Epoch Time in seconds = " + currentTime);
+    	long nowMinusSeconds = currentTime - taggingTime;
     	//Keep checking if the scan results are available at polling intervals, until TIMEOUT_PERIOD is reached or results are available
     	try {
-	    	while ((scanResult = getScanReport(imageId)) == null ) {
+	    	while ((scanResult = getScanReport(imageId, nowMinusSeconds)) == null ) {
 	    		long endTime = System.currentTimeMillis();
 	    		if ((endTime - startTime) > vulnsTimeoutInMillis) {
 	    			buildLogger.println("Failed to get scan result; timeout of " + vulnsTimeout + " seconds reached. Please check if image " + imageId + " is synced with API server.");
@@ -79,6 +82,7 @@ public class GetImageVulnsCallable implements Callable<String> {
 	    		try {
 	    			buildLogger.println("Waiting for " + pollingIntervalForVulns + " seconds before making next attempt for " + imageId + " ...");
 	    			Thread.sleep(pollingInMillis);
+	    			nowMinusSeconds = nowMinusSeconds + pollingIntervalForVulns;
 	    		} catch(InterruptedException e) {
 	    			buildLogger.println("Error waiting for scan result..");
 	    		}
@@ -101,13 +105,13 @@ public class GetImageVulnsCallable implements Callable<String> {
     	return scanResult;
     }
 
-	private String getScanReport(String imageId) throws Exception {
+	private String getScanReport(String imageId, long nowMinusSeconds) throws Exception {
 	
 	  	try {
     		//buildLogger.println(new Timestamp(System.currentTimeMillis()) + " ["+ Thread.currentThread().getName() +"] - Calling API: "+ auth.getServer() + String.format(Helper.GET_SCAN_RESULT_API_PATH_FORMAT , imageId));
     	
     		QualysCSResponse resp = null;
-            resp = qualysClient.getImages(imageId, taggingTime.get(imageId));
+            resp = qualysClient.getImages(imageId, nowMinusSeconds);
     	    logger.info("Received response code: " + resp.responseCode);
     	 
     	    if (resp.responseCode == 400) {
@@ -130,7 +134,7 @@ public class GetImageVulnsCallable implements Callable<String> {
 			//buildLogger.println("Get scan result API for image " + imageId + " returned code : " + resp.responseCode + "; ");
 			if(resp.responseCode == HttpURLConnection.HTTP_NO_CONTENT) {
 				buildLogger.println("Waiting for image data from Qualys for image id " + imageId);
-				buildLogger.println("HTTP Code: "+ resp.responseCode +". Image details for "+ imageId + " last scanned after timestamp " + taggingTime.get(imageId) + " not found yet.");
+				buildLogger.println("HTTP Code: "+ resp.responseCode +". Image details for "+ imageId + " last scanned within last " + nowMinusSeconds + " seconds not found yet.");
 				return null;
 			}else if(resp.responseCode == HttpURLConnection.HTTP_OK && resp.response != null) {
 				buildLogger.println("HTTP Code: "+ resp.responseCode +". Data available; Now fetching image details for imageId " + imageId);
