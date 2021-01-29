@@ -9,26 +9,24 @@ import com.qualys.plugins.containerSecurity.util.DockerClientHelper;
 import hudson.model.TaskListener;
 import jenkins.security.MasterToSlaveCallable;
 
-public class TagImageSlaveCallable extends MasterToSlaveCallable<String, IOException> implements Serializable{
-	private static final long serialVersionUID = -4143159957567745621L;
-	private String image;
-	private String imageId;
+public class CheckSensorSlaveCallable extends MasterToSlaveCallable<Boolean, IOException> implements Serializable{
+	
+	private static final long serialVersionUID = 1L;
 	private String dockerUrl;
 	private String dockerCert;
 	private TaskListener listener;
 	
-	public TagImageSlaveCallable(String image, String imageId, String dockerUrl, String dockerCert, TaskListener listener) {
-		this.image = image;
-		this.imageId = imageId;
+	public CheckSensorSlaveCallable(String dockerUrl, String dockerCert, TaskListener listener) {
+		
 		this.dockerUrl = dockerUrl;
 		this.dockerCert = dockerCert;
 		this.listener = listener;
 	}
 	
-	public String call() throws IOException {
+	public Boolean call() throws IOException {
 		DockerClientHelper helper = new DockerClientHelper(listener.getLogger());
 		DockerClient dockerClient = helper.getDockerClient(dockerUrl, dockerCert);
-		helper.tagTheImage(dockerClient, image, imageId);
-		return "";
+		return helper.isCICDSensorUp(dockerClient);
 	}
 }
+

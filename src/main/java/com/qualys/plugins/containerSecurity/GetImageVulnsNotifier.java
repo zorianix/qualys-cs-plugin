@@ -2,8 +2,7 @@ package com.qualys.plugins.containerSecurity;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -15,7 +14,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
@@ -33,11 +31,9 @@ import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
-import qshaded.com.google.gson.JsonObject;
-import qshaded.com.google.gson.Gson;
-import qshaded.com.google.gson.JsonArray;
-import qshaded.com.google.gson.JsonElement;
-import qshaded.com.google.gson.reflect.TypeToken;
+import com.qualys.plugins.common.QualysAuth.QualysAuth;
+import com.qualys.plugins.common.QualysClient.QualysCSClient;
+import com.qualys.plugins.common.QualysClient.QualysCSTestConnectionResponse;
 import com.qualys.plugins.containerSecurity.config.QualysGlobalConfig;
 import com.qualys.plugins.containerSecurity.model.ProxyConfiguration;
 import com.qualys.plugins.containerSecurity.util.Helper;
@@ -47,11 +43,8 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
 import hudson.model.Item;
-import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.security.ACL;
@@ -64,10 +57,11 @@ import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
-
-import com.qualys.plugins.common.QualysAuth.QualysAuth;
-import com.qualys.plugins.common.QualysClient.QualysCSClient;
-import com.qualys.plugins.common.QualysClient.QualysCSTestConnectionResponse;
+import qshaded.com.google.gson.Gson;
+import qshaded.com.google.gson.JsonArray;
+import qshaded.com.google.gson.JsonElement;
+import qshaded.com.google.gson.JsonObject;
+import qshaded.com.google.gson.reflect.TypeToken;
 
 @Extension
 public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
@@ -122,11 +116,12 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     private boolean failByCvss = false;
 	
 	private JsonObject criteriaObj;
-	private Helper helper = new Helper();
+	private long taggingTime;
     
+	
     private final static Logger logger = Logger.getLogger(GetImageVulnsNotifier.class.getName());
-    private final static int DEFAULT_POLLING_INTERVAL_FOR_VULNS = 30;
-    private final static int DEFAULT_TIMEOUT_FOR_VULNS = 600;
+    private final static int DEFAULT_POLLING_INTERVAL_FOR_VULNS = 30; //in sec
+    private final static int DEFAULT_TIMEOUT_FOR_VULNS = 600; //in sec
 
     @DataBoundConstructor
     public GetImageVulnsNotifier(boolean useGlobalConfig, boolean useLocalConfig, String apiServer, String apiUser, String apiPass, String credentialsId, String pollingInterval,
@@ -851,6 +846,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
 		 //tagging images with qualys container security tag
 		 //tagImages(imageIdList, listener, launcher);
 		 Set<String> imageSet = new LinkedHashSet<>(imageList);
+		 
 	     HashMap<String, String> uniqueImageIdList = processImages(imageSet, listener, launcher);
 	     
 		String apiUserVal = "";
@@ -934,8 +930,8 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
         	auth.setProxyCredentials(proxyServer, proxyUsernameVal, proxyPasswordVal, proxyPort);
     	}
     	 
-		int pollingIntervalForVulns = setTimeoutInMillis("polling", DEFAULT_POLLING_INTERVAL_FOR_VULNS, pollingInterval, listener);
-		int timeoutToFetchVulnsInMillis = setTimeoutInMillis("vulns", DEFAULT_TIMEOUT_FOR_VULNS, vulnsTimeout, listener);
+		int pollingIntervalForVulns = setTimeoutInSec("polling", DEFAULT_POLLING_INTERVAL_FOR_VULNS, pollingInterval, listener);
+		int timeoutToFetchVulnsInMillis = setTimeoutInSec("vulns", DEFAULT_TIMEOUT_FOR_VULNS, vulnsTimeout, listener);
     	QualysCSClient client = new QualysCSClient(auth, listener.getLogger());
     	
     	boolean isFailConditionsConfigured = false;
@@ -947,7 +943,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     	
     	listener.getLogger().println("Qualys task - Started fetching docker image scan results.");
         
-    	executor.getAndProcessDockerImagesScanResult(helper, uniqueImageIdList);
+    	executor.getAndProcessDockerImagesScanResult(uniqueImageIdList, taggingTime);
         listener.getLogger().println("Qualys task - Finished.");
     }
     
@@ -957,7 +953,25 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     	
     	String IMAGE_ID_REGEX = "^([A-Fa-f0-9]{12}|[A-Fa-f0-9]{64})$";
 		Pattern pattern = Pattern.compile(IMAGE_ID_REGEX);
+	
+		listener.getLogger().println("Checking if Qualys CS sensor is running on same instance using: " + dockerUrl + (StringUtils.isNotBlank(dockerCert) ? " & docker Cert path : " + dockerCert + "." : "") );
+		//Check if sensor is running on same instance where images are built and docker daemon is shared
+		boolean isCICDSensorRunning = launcher.getChannel().call(new CheckSensorSlaveCallable(dockerUrl, dockerCert, listener));
+		
+		listener.getLogger().println("*** Qualys CS sensor container is up and running!! ***");
+		
+		if(!isCICDSensorRunning) {
+			listener.getLogger().println("*** Qualys CS sensor is not deployed in CICD mode ***");
+		}else {
+			listener.getLogger().println("*** Qualys CS sensor is deployed in CICD mode ***");
+		}
+		
 		listener.getLogger().println("For Image tagging, using docker url: " + dockerUrl + (StringUtils.isNotBlank(dockerCert) ? " & docker Cert path : " + dockerCert + "." : "") );
+		
+		Instant instant = Instant.now();
+		taggingTime = instant.getEpochSecond();
+		listener.getLogger().println("***Epoch Time in seconds before tagging = " + taggingTime);
+		
 		for (String OriginalImage : imageList) {
     		String image = OriginalImage.trim();
     		String imageId;
@@ -974,7 +988,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
       		} else {
       			imageId = image;
       		}
-    		
+      		
     		if (imageId != null) {
     			if (!listOfImageIds.contains(imageId)) {
     				listOfImageIds.add(imageId);
@@ -982,7 +996,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     				logger.info("Adding qualys_scan_target tag to the image " + image);
     				listener.getLogger().println("Adding qualys specific docker tag to the image " + image);
     				try {
-    					launcher.getChannel().call(new TagImageSlaveCallable(helper, image, imageId, dockerUrl, dockerCert, listener));
+    					launcher.getChannel().call(new TagImageSlaveCallable(image, imageId, dockerUrl, dockerCert, listener));
     				}catch(Exception e) {
     					e.printStackTrace(listener.getLogger());
     					throw e;
@@ -991,13 +1005,14 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     			} else {
     				listener.getLogger().println(image + " has same image Id as one of the configured image: " + finalImagesList.get(imageId) + ". So processing it only once.");
     			}
+    			
     		}
     	}
     	return finalImagesList;
 	}
     
-    private int setTimeoutInMillis(String timeoutType, int defaultTimeoutInMillis, String timeout, TaskListener listener) {
-    	int timeoutInMillis = defaultTimeoutInMillis;
+    private int setTimeoutInSec(String timeoutType, int defaultTimeoutInSec, String timeout, TaskListener listener) {
+    	int timeoutInSec = defaultTimeoutInSec;
     	if (!(timeout == null || timeout.isEmpty()) ){
     		try {
     			//if timeout is a regex of form 2*60*60 seconds, calculate the timeout in seconds
@@ -1007,17 +1022,17 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     				timeoutInSecs *= Long.parseLong(numbers[i]);
     			}
     			if(timeoutType.equals("polling") && timeoutInSecs < 30) {
-    				listener.getLogger().println("Polling interval timeout cannot be less than 30 seconds. Using default polling interval timeout 120 seconds.");
-    				return defaultTimeoutInMillis;
+    				listener.getLogger().println("Polling interval timeout cannot be less than 30 seconds. Using default polling interval of " + defaultTimeoutInSec + " seconds.");
+    				return defaultTimeoutInSec;
     			}
     			return timeoutInSecs;
     		} catch(Exception e) {
     			listener.getLogger().println("Invalid " + timeoutType + " time value. Cannot parse -"+e.getMessage());
-    			listener.getLogger().println("Using default period of " + TimeUnit.MILLISECONDS.toHours(DEFAULT_TIMEOUT_FOR_VULNS)
-    			+ " hrs for " + timeoutType + " data");
+    			listener.getLogger().println("Using default period of " + defaultTimeoutInSec
+    			+ " seconds for " + timeoutType + " data");
     		}
     	}
-    	return timeoutInMillis; 
+    	return timeoutInSec; 
     }
     
     private String getDockerImageId(EnvVars envVars, PrintStream logger) {

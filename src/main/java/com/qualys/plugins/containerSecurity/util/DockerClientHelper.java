@@ -2,6 +2,9 @@ package com.qualys.plugins.containerSecurity.util;
 
 import java.io.PrintStream;
 import java.net.UnknownHostException;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
@@ -9,6 +12,7 @@ import org.apache.commons.lang.StringUtils;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.DockerCmdExecFactory;
 import com.github.dockerjava.api.command.InspectImageCmd;
+import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.DockerClientConfig;
@@ -32,7 +36,7 @@ public class DockerClientHelper {
     	if (dockerUrl == null || dockerUrl.isEmpty()) {
        		dockerUrl = "unix:///var/run/docker.sock";
        	}
-    	buildLogger.println("Using docker daemon URL : " + dockerUrl );
+    	//buildLogger.println("Using docker daemon URL : " + dockerUrl );
     	DockerClientConfig config = null;
 		if(StringUtils.isEmpty(dockerCert)) {
 			config = DefaultDockerClientConfig.createDefaultConfigBuilder()
@@ -40,7 +44,7 @@ public class DockerClientHelper {
 					  .withDockerTlsVerify(false)
 					  .build();
 		}else {
-			buildLogger.println("Using docker cert path : " + dockerCert);
+			//buildLogger.println("Using docker cert path : " + dockerCert);
 			config = DefaultDockerClientConfig.createDefaultConfigBuilder()
 					  .withDockerHost(dockerUrl)
 					  .withDockerTlsVerify(true)
@@ -79,17 +83,30 @@ public class DockerClientHelper {
 		}
 	}
 	
-	  public void tagTheImage(Helper helper, DockerClient dockerClient, String imageIdOrName, String imageId) {
+	  public void tagTheImage(DockerClient dockerClient, String imageIdOrName, String imageId) throws AbortException {
+		  
 		  if (imageId != null ) {
 			  try {
 				dockerClient.tagImageCmd(imageIdOrName, "qualys_scan_target", imageId).withForce(true).exec();
-				buildLogger.println("Tagged image(" + imageIdOrName + ") successfully.");
+				buildLogger.println("Tagged image(" + imageIdOrName + ") successfully");
 			  } catch(Exception e) {
 	    		for (StackTraceElement traceElement : e.getStackTrace())
 	                logger.info("\tat " + traceElement);
 	    		buildLogger.println("Failed to tag the image " + imageIdOrName + " with qualys_scan_target.. Reason : " + e.getMessage());
-	    		helper.TAGGING_STATUS.add(imageId);
+	    		throw new AbortException("Failed to tag the image " + imageIdOrName + " with qualys_scan_target.. Reason : " + e.getMessage());
 			  }
 	    }
 	}
+	  
+	  public boolean isCICDSensorUp(DockerClient dockerClient) throws AbortException {
+		  List<Container> containers = dockerClient.listContainersCmd().exec();
+		  for (Container container: containers) {
+			  Map<String, String> labels = container.getLabels();
+			  if (labels.get("VersionInfo") != null && labels.get("VersionInfo").contains("Qualys Sensor")) {
+				  return container.getCommand()!=null && container.getCommand().contains("cicd-deployed-sensor") ? true : false;
+			  }
+		  }
+		  throw new AbortException("Qualys CS sensor container is not running... Please check if sensor is configured correctly.");
+	  }
+	  
 }

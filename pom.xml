@@ -131,14 +131,8 @@
    <dependency>
 		<groupId>com.qualys</groupId>
         <artifactId>cs-plugin-common</artifactId>
-        <version>1.2.1</version>
+        <version>1.2.2</version>
 	</dependency>
-  <!-- https://mvnrepository.com/artifact/junit/junit -->
-  <dependency>
-    <groupId>junit</groupId>
-    <artifactId>junit</artifactId>
-    <version>4.12</version>
-  </dependency>
   <dependency>
 		<groupId>com.aries</groupId>
 		<artifactId>docker-java-shaded</artifactId>
