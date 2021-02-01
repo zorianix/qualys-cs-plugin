@@ -47,6 +47,7 @@ import hudson.model.AbstractProject;
 import hudson.model.Item;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.remoting.VirtualChannel;
 import hudson.security.ACL;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
@@ -956,7 +957,13 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
 	
 		listener.getLogger().println("Checking if Qualys CS sensor is running on same instance using: " + dockerUrl + (StringUtils.isNotBlank(dockerCert) ? " & docker Cert path : " + dockerCert + "." : "") );
 		//Check if sensor is running on same instance where images are built and docker daemon is shared
-		boolean isCICDSensorRunning = launcher.getChannel().call(new CheckSensorSlaveCallable(dockerUrl, dockerCert, listener));
+		
+		VirtualChannel channel = launcher.getChannel();
+	    Boolean isCICDSensorRunning =  (channel == null ? null : channel.call(new CheckSensorSlaveCallable(dockerUrl, dockerCert, listener)));
+		
+	    if (isCICDSensorRunning == null) {
+	    	throw new AbortException("Unable to launch the sensor check operation using SlaveCallable");
+	    }
 		
 		listener.getLogger().println("*** Qualys CS sensor container is up and running!! ***");
 		
@@ -979,7 +986,8 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     		Matcher matcher = pattern.matcher(image);
       		if (!matcher.find()){
       			try {
-      				imageId = launcher.getChannel().call(new ImageIdExtractSlaveCallable(image, dockerUrl, dockerCert, listener));
+      				VirtualChannel channel2 = launcher.getChannel();
+      				imageId =  (channel2 == null ? null : channel2.call(new ImageIdExtractSlaveCallable(image, dockerUrl, dockerCert, listener)));
       				//imageId = helper.fetchImageId(dockerClient, image);
       			}catch(Exception e) {
       				e.printStackTrace(listener.getLogger());
@@ -996,7 +1004,10 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     				logger.info("Adding qualys_scan_target tag to the image " + image);
     				listener.getLogger().println("Adding qualys specific docker tag to the image " + image);
     				try {
-    					launcher.getChannel().call(new TagImageSlaveCallable(image, imageId, dockerUrl, dockerCert, listener));
+    					VirtualChannel channel2 = launcher.getChannel();
+          				if (channel2 != null) {
+          					channel2.call(new TagImageSlaveCallable(image, imageId, dockerUrl, dockerCert, listener));
+          				}
     				}catch(Exception e) {
     					e.printStackTrace(listener.getLogger());
     					throw e;
