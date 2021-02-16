@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -968,7 +967,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
 		listener.getLogger().println("*** Qualys CS sensor container is up and running!! ***");
 		
 		if(!isCICDSensorRunning) {
-			listener.getLogger().println("*** Qualys CS sensor is not deployed in CICD mode ***");
+			throw new AbortException("Qualys CS sensor is not deployed in CICD mode");
 		}else {
 			listener.getLogger().println("*** Qualys CS sensor is deployed in CICD mode ***");
 		}
