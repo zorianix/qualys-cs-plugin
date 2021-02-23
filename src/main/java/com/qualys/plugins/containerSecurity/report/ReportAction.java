@@ -55,7 +55,6 @@ public class ReportAction implements Action {
 	    		this.reportObject = scanResult.getAsJsonObject(this.dockerImageId);
 	    		//get trending data for current image
 	    		JsonArray trendingDataArr = obj.getAsJsonArray("trendingData");
-	    		JsonArray arr = new JsonArray();
 	    		for(JsonElement el: trendingDataArr) {
 	    			JsonObject trend = el.getAsJsonObject();
 	    			String imageId = trend.get("imageId").getAsString();
@@ -67,7 +66,10 @@ public class ReportAction implements Action {
 	    	else {
 	    		logger.info("Error: Couldn't find summary file for the build.");
 	    	}
-    	}catch(Exception e) {
+        } catch (RuntimeException e) {
+        	e.printStackTrace();
+    		logger.info("Error while reading summary file: " + e.getMessage());
+        }catch(Exception e) {
     		e.printStackTrace();
     		logger.info("Error while reading summary file: " + e.getMessage());
     	}
@@ -93,25 +95,29 @@ public class ReportAction implements Action {
     	JsonArray prevRunSummary = null;
         Run<?, ?> prevRun = run;
     	
-    	while(prevRun.getPreviousBuild() != null) {
+    	while(prevRun != null && prevRun.getPreviousBuild() != null) {
 	        try {
 	        	prevRun = prevRun.getPreviousBuild();
-	        	String filename = prevRun.getArtifactsDir().getAbsolutePath() + File.separator + "qualys_images_summary.json";
-	        	File f = new File(filename);
-	        	if(f.exists()){
-	        		prevBuildNumber = prevRun.number;
-	        		//read file and get values
-	        		String result = FileUtils.readFileToString(f);
-		    		JsonObject obj1 = gson.fromJson(result, JsonObject.class);
-		    		prevRunSummary = obj1.getAsJsonArray("trendingData");
-	        		break;
+	        	if (prevRun != null) {
+	        		String filename = prevRun.getArtifactsDir().getAbsolutePath() + File.separator + "qualys_images_summary.json";
+		        	File f = new File(filename);
+		        	if(f.exists()){
+		        		prevBuildNumber = prevRun.number;
+		        		//read file and get values
+		        		String result = FileUtils.readFileToString(f);
+			    		JsonObject obj1 = gson.fromJson(result, JsonObject.class);
+			    		prevRunSummary = obj1.getAsJsonArray("trendingData");
+		        		break;
+		        	}
 	        	}
+	        } catch (RuntimeException e) {
+	            break;	
 	        }catch(Exception e){
 	        	break;
 	        }
         }
     	if(prevRunSummary != null && !prevRunSummary.isJsonNull() && rposArr != null)  {
-	    	Type listType = new TypeToken<List<String>>(){}.getType();
+	    	Type listType = TypeToken.getParameterized(List.class, String.class).getType(); 
 	    	List<String> currRepos = gson.fromJson(rposArr.toString(), listType);
 	    	//compare repos to get matched vulnscount
 	    	for(JsonElement el: prevRunSummary) {

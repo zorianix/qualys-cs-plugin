@@ -16,10 +16,10 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 
-import qshaded.com.google.gson.Gson;
-import qshaded.com.google.gson.JsonArray;
-import qshaded.com.google.gson.JsonElement;
-import qshaded.com.google.gson.JsonObject;
+import com.qualys.plugins.common.QualysAuth.QualysAuth;
+import com.qualys.plugins.common.QualysClient.QualysCSClient;
+import com.qualys.plugins.common.QualysClient.QualysCSTestConnectionResponse;
+import com.qualys.plugins.common.QualysCriteria.QualysCriteria;
 import com.qualys.plugins.containerSecurity.model.ProxyConfiguration;
 import com.qualys.plugins.containerSecurity.report.ReportAction;
 import com.qualys.plugins.containerSecurity.util.Helper;
@@ -29,11 +29,10 @@ import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-
-import com.qualys.plugins.common.QualysAuth.QualysAuth;
-import com.qualys.plugins.common.QualysClient.QualysCSClient;
-import com.qualys.plugins.common.QualysClient.QualysCSTestConnectionResponse;
-import com.qualys.plugins.common.QualysCriteria.QualysCriteria;
+import qshaded.com.google.gson.Gson;
+import qshaded.com.google.gson.JsonArray;
+import qshaded.com.google.gson.JsonElement;
+import qshaded.com.google.gson.JsonObject;
 
 public class GetImageVulns {
     private Run<?, ?> run;
@@ -47,7 +46,6 @@ public class GetImageVulns {
     private ProxyConfiguration proxyConfiguration;
     private JsonObject criteria;
     private QualysAuth auth;
-    private String imageSHA;
     
     private boolean buildSuccess = true;
     private final static Logger logger = Logger.getLogger(GetImageVulns.class.getName());
@@ -67,7 +65,7 @@ public class GetImageVulns {
         this.proxyConfiguration = proxyConfiguration;
     }
 	
-    public void getAndProcessDockerImagesScanResult(HashMap<String, String> imageList) throws AbortException, QualysEvaluationException {
+    public void getAndProcessDockerImagesScanResult(HashMap<String, String> imageList, long taggingTime) throws AbortException, QualysEvaluationException {
     	if (imageList == null || imageList.isEmpty()) {
     		return;
     	}
@@ -101,7 +99,10 @@ public class GetImageVulns {
     				throw new QualysEvaluationException(resp.message);
 		   		}
     		}
-        } catch (Exception e) {
+    	} catch (RuntimeException e) {
+    		logger.info("Test connection with Qualys API server failed. Reason : " + e.getMessage());
+            throw new QualysEvaluationException("Test connection with Qualys API server failed. Reason : " + e.getMessage());
+    	} catch (Exception e) {
     		logger.info("Test connection with Qualys API server failed. Reason : " + e.getMessage());
             throw new QualysEvaluationException("Test connection with Qualys API server failed. Reason : " + e.getMessage());
         }
@@ -113,7 +114,7 @@ public class GetImageVulns {
         
         for (String imageId : imageList.keySet()) {
             //submit Callable tasks to be executed by thread pool
-        	Future<String> future = executor.submit(new GetImageVulnsCallable(imageId, qualysClient, listener, 
+        	Future<String> future = executor.submit(new GetImageVulnsCallable(taggingTime, imageId, qualysClient, listener, 
         			pollingIntervalForVulns, vulnsTimeout, run.getArtifactsDir().getAbsolutePath(), isFailConditionsConfigured, auth));
             //add Future to the list, we can get return value using Future
             list.put(imageId, future);
@@ -128,10 +129,10 @@ public class GetImageVulns {
         JsonArray trendingDataObj = new JsonArray();
         JsonObject scanReportObj = new JsonObject();
         JsonObject imageSHA = new JsonObject();
-        
+        boolean hasAtleastOneResult = false;
+        List<String> otherExceptions = new ArrayList<String>();
         for(Map.Entry<String, String> entry : imageList.entrySet()) {
         	String imageID = entry.getKey();
-        	String originalImageStr = entry.getValue();
         	String response = null;
         	Future<String> future = list.get(imageID);
         	//JsonObject report = null;
@@ -139,7 +140,8 @@ public class GetImageVulns {
         		response = future.get();
         	}catch(Exception e) {
         		if (isFailConditionsConfigured) {
-        			throw new AbortException(e.getMessage());
+        			//throw new AbortException(e.getMessage());
+        			otherExceptions.add(e.getMessage());
         		}
         	}
         	
@@ -150,46 +152,53 @@ public class GetImageVulns {
             	Gson gson = new Gson();
             	String criteriaString = gson.toJson(criteria);
             	buildLogger.println("Criteria object: " +  criteriaString);
-            	if (response != null) {
-            		String scanResult = response;
-        			if (!(scanResult == null || scanResult.isEmpty())) {
-        				
-        				// Added Image SHA256 for create Image summary link on report page. 
-        				JsonObject scanResultObj = gson.fromJson(scanResult, JsonObject.class);
-        				if (scanResultObj.has("sha"))
-        					imageSHA.addProperty(imageID, scanResultObj.get("sha").getAsString());
-        				//evaluate scan result against criteria configured          		
-            			QualysCriteria criteria2 = new QualysCriteria(criteriaString);
-            			buildSuccess = criteria2.evaluate(gson.fromJson(response, JsonObject.class));
-            			JsonObject reportObj = criteria2.getResult();
-            			
-            			//data for summary file - will be used to generate reports
-            			scanReportObj.add(imageID, reportObj);
-            			JsonObject trend = getTrendingForImage(imageID, reportObj);
-            			trendingDataObj.add(trend);
-            			//get falilure messages
-            			if(!buildSuccess) {
-            				String failReason = getBuildFailureMessages(imageID, reportObj);
-            				exceptionMessages.add(failReason);
-            			}
-            			//excluded items logs
-            			if(reportObj.getAsJsonObject("qids") != null || reportObj.getAsJsonObject("cveIds") != null) {
-            				JsonObject qids = reportObj.getAsJsonObject("qids");
-            				if(qids.get("excluded") != null && !qids.get("excluded").isJsonNull() && !StringUtils.isEmpty(qids.get("excluded").getAsString())) {
-            					buildLogger.println("Excluded QIDs while evaluating image <" + imageID + "> : " + qids.get("excluded").getAsString());
-            				}
-            				JsonObject cves = reportObj.getAsJsonObject("cveIds");
-            				if(cves.get("excluded") != null && !cves.get("excluded").isJsonNull() && !StringUtils.isEmpty(cves.get("excluded").getAsString())) {
-            					buildLogger.println("Excluded CVE IDs while evaluating image <" + imageID + "> : " + cves.get("excluded").getAsString());
-            				}
-            			}
-            		}
-            	}
+        	
+        		String scanResult = response;
+    			if (!scanResult.isEmpty()) {
+    				hasAtleastOneResult = true;
+    				// Added Image SHA256 for create Image summary link on report page. 
+    				JsonObject scanResultObj = gson.fromJson(scanResult, JsonObject.class);
+    				if (scanResultObj.has("sha"))
+    					imageSHA.addProperty(imageID, scanResultObj.get("sha").getAsString());
+    				//evaluate scan result against criteria configured          		
+        			QualysCriteria criteria2 = new QualysCriteria(criteriaString);
+        			buildSuccess = criteria2.evaluate(gson.fromJson(response, JsonObject.class));
+        			JsonObject reportObj = criteria2.getResult();
+        			
+        			//data for summary file - will be used to generate reports
+        			scanReportObj.add(imageID, reportObj);
+        			JsonObject trend = getTrendingForImage(imageID, reportObj);
+        			trendingDataObj.add(trend);
+        			//get falilure messages
+        			if(!buildSuccess) {
+        				String failReason = getBuildFailureMessages(imageID, reportObj);
+        				exceptionMessages.add(failReason);
+        			}
+        			//excluded items logs
+        			if(reportObj.getAsJsonObject("qids") != null || reportObj.getAsJsonObject("cveIds") != null) {
+        				JsonObject qids = reportObj.getAsJsonObject("qids");
+        				if(qids.get("excluded") != null && !qids.get("excluded").isJsonNull() && !StringUtils.isEmpty(qids.get("excluded").getAsString())) {
+        					buildLogger.println("Excluded QIDs while evaluating image <" + imageID + "> : " + qids.get("excluded").getAsString());
+        				}
+        				JsonObject cves = reportObj.getAsJsonObject("cveIds");
+        				if(cves.get("excluded") != null && !cves.get("excluded").isJsonNull() && !StringUtils.isEmpty(cves.get("excluded").getAsString())) {
+        					buildLogger.println("Excluded CVE IDs while evaluating image <" + imageID + "> : " + cves.get("excluded").getAsString());
+        				}
+        			}
+        		}
+        	
             }catch(Exception e){
             	e.printStackTrace();
             	buildLogger.println("Error while processing/evaluating scan result. Error: " + e.getMessage());
             }
         }
+        
+        if (!hasAtleastOneResult) {
+    		if(!otherExceptions.isEmpty()) {
+    			throw new AbortException(otherExceptions.stream().collect(Collectors.joining("\n")));
+    		}	
+    	}
+        
         JsonObject summaryObj = new JsonObject();
         summaryObj.add("scanResult", scanReportObj);        
         summaryObj.add("trendingData", trendingDataObj);
@@ -202,6 +211,9 @@ public class GetImageVulns {
         	EnvVars env = run.getEnvironment(listener);
         	buildNo = env.get("BUILD_NUMBER");
         	Helper.createZip(run.getArtifactsDir().getAbsolutePath()+"/qualys_plugin_scanResult-" + buildNo + ".zip", run.getArtifactsDir().getAbsolutePath(), buildLogger);
+        } catch (RuntimeException e) {
+        	e.printStackTrace();
+        	buildLogger.println("Failed to create zip file. Exception: " + e.getMessage());
         } catch(Exception e) {
         	e.printStackTrace();
         	buildLogger.println("Failed to create zip file. Exception: " + e.getMessage());
@@ -240,6 +252,10 @@ public class GetImageVulns {
         }
         
         buildLogger.println("Qualys Container Scanning Connector - finished.");
+        
+        if (!otherExceptions.isEmpty()) {
+        	exceptionMessages.addAll(otherExceptions);
+        }
         
     	if(!exceptionMessages.isEmpty()) {
         	throw new QualysEvaluationException(exceptionMessages.stream().collect(Collectors.joining("\n")));
@@ -283,6 +299,8 @@ public class GetImageVulns {
         	buildNo = env.get("BUILD_NUMBER");
         	jobName = env.get("JOB_NAME");
         	jobUrl = env.get("JOB_URL");
+        } catch (RuntimeException e) {
+        	buildLogger.println("Failed to fetch build number from environment variables");
         } catch(Exception e) {
         	buildLogger.println("Failed to fetch build number from environment variables");
         }
@@ -342,7 +360,7 @@ public class GetImageVulns {
 			JsonObject qidObj = jsonObj.get("qids").getAsJsonObject();
 			JsonObject qidNewObj = null;
 			if(! qidObj.get("result").getAsBoolean()) {
-				if(qidNewObj == null) qidNewObj = new JsonObject();
+				qidNewObj = new JsonObject();
 				qidNewObj.add("configured", qidObj.get("configured"));
 				qidNewObj.add("found", qidObj.get("found"));
 			}
@@ -354,7 +372,7 @@ public class GetImageVulns {
 			JsonObject cveObj = jsonObj.get("cveIds").getAsJsonObject();
 			JsonObject cveNewObj = null;
 			if(! cveObj.get("result").getAsBoolean()) {
-				if(cveNewObj == null) cveNewObj = new JsonObject();
+				cveNewObj = new JsonObject();
 				cveNewObj.add("configured", cveObj.get("configured"));
 				cveNewObj.add("found", cveObj.get("found"));
 			}
@@ -366,7 +384,7 @@ public class GetImageVulns {
 			JsonObject cvssObj = jsonObj.get("cvss").getAsJsonObject();
 			JsonObject cvssNewObj = null;
 			if(! cvssObj.get("result").getAsBoolean()) {
-				if(cvssNewObj == null) cvssNewObj = new JsonObject();
+				cvssNewObj = new JsonObject();
 				cvssNewObj.add("configured", cvssObj.get("configured"));
 				cvssNewObj.add("found", cvssObj.get("found"));
 				if (cvssObj.has("version") && cvssObj.get("version").getAsString().equalsIgnoreCase("3")) {					
@@ -383,13 +401,16 @@ public class GetImageVulns {
 			JsonObject softwareObj = jsonObj.get("software").getAsJsonObject();
 			JsonObject softwareNewObj = null;
 			if(! softwareObj.get("result").getAsBoolean()) {
-				if(softwareNewObj == null) softwareNewObj = new JsonObject();
+				softwareNewObj = new JsonObject();
 				softwareNewObj.add("configured", softwareObj.get("configured"));
 				softwareNewObj.add("found", softwareObj.get("found"));
 			}
 			if(softwareNewObj != null) {
 				returnObj.add("software", softwareNewObj);
 			}
+        } catch (RuntimeException e) {
+    		logger.info("Error while making webhook data : " + e.getMessage());
+    		e.printStackTrace();
     	}catch(Exception e) {
     		logger.info("Error while making webhook data : " + e.getMessage());
     		e.printStackTrace();
@@ -456,7 +477,8 @@ public class GetImageVulns {
     			failureMessages.add("Softwares configured in Failure Conditions were found in the scan result of image " + imageID +" : " + found );
     		}
 		}
-		String sevConfigured = "\nConfigured : ";
+		StringBuffer sevConfigured = new StringBuffer();
+		sevConfigured.append("\nConfigured : ");
 		String sevFound = "\nFound : ";
 		boolean severityFailed = false;
 		for(int i=1; i<=5; i++) {
@@ -465,7 +487,7 @@ public class GetImageVulns {
     			JsonObject severity = sevObj.get(""+i).getAsJsonObject();
     			if(severity.has("configured") && !severity.get("configured").isJsonNull() && severity.get("configured").getAsInt() != -1) {
 	    			sevFound += "Severity "+ i +": "+ (severity.get("found").isJsonNull() ? 0 : severity.get("found").getAsString()) + ";";
-	    			sevConfigured += "Severity "+ i +">"+ severity.get("configured").getAsString() + ";";
+	    			sevConfigured.append("Severity "+ i +">"+ severity.get("configured").getAsString() + ";");
 		    		boolean sevPass = severity.get("result").getAsBoolean();
 		    		if(!sevPass) {
 		    			severityFailed = true;
@@ -483,7 +505,7 @@ public class GetImageVulns {
     		}
 		}
 		if(severityFailed) {
-			failureMessages.add("The vulnerabilities count by severity for image id " + imageID + " exceeded one of the configured threshold value :" + sevConfigured + sevFound);
+			failureMessages.add("The vulnerabilities count by severity for image id " + imageID + " exceeded one of the configured threshold value :" + sevConfigured.toString() + sevFound);
 		}
 		
 		return StringUtils.join(failureMessages, "\n");
