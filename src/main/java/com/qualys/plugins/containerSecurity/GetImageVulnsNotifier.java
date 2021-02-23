@@ -1065,8 +1065,8 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
 	@Symbol(value = { "getImageVulnsFromQualys" })
     public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
-        private final static String URL_REGEX = "^(https?)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
-        private final static String PROXY_REGEX = "^((https?)://)?[-a-zA-Z0-9+&@#/%?=~_|!,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
+        private final static String URL_REGEX = "^(https?)://[-a-zA-Z0-9+&#/%?=~_|!:,.;]*[-a-zA-Z0-9+&#/%=~_|]";
+        private final static String PROXY_REGEX = "^((https?)://)?[-a-zA-Z0-9+&#/%?=~_|!,.;]*[-a-zA-Z0-9+&#/%=~_|]";
         private final static String TIMEOUT_PERIOD_REGEX = "^(\\d+[*]?)*(?<!\\*)$";
 
         @Override
