@@ -5,3 +5,4 @@ src/.project
 work/*
 .classpath
 .project
+/target/

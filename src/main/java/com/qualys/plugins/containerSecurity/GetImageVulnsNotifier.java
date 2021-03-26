@@ -980,9 +980,9 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
 		
 		for (String OriginalImage : imageList) {
     		String image = OriginalImage.trim();
-    		String imageId;
+    		String imageSha;
     		
-    		Matcher matcher = pattern.matcher(image);
+    		/*Matcher matcher = pattern.matcher(image);
       		if (!matcher.find()){
       			try {
       				VirtualChannel channel2 = launcher.getChannel();
@@ -994,18 +994,27 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
       			}
       		} else {
       			imageId = image;
-      		}
+      		}*/
+    		
+    		try {
+  				VirtualChannel channel2 = launcher.getChannel();
+  				imageSha =  (channel2 == null ? null : channel2.call(new ImageShaExtractSlaveCallable(image, dockerUrl, dockerCert, listener)));
+  				//imageId = helper.fetchImageId(dockerClient, image);
+  			}catch(Exception e) {
+  				e.printStackTrace(listener.getLogger());
+  				throw e;
+  			}
       		
-    		if (imageId != null) {
-    			if (!listOfImageIds.contains(imageId)) {
-    				listOfImageIds.add(imageId);
-    				finalImagesList.put(imageId, image);
+    		if (imageSha != null) {
+    			if (!listOfImageIds.contains(imageSha)) {
+    				listOfImageIds.add(imageSha);
+    				finalImagesList.put(imageSha, image);
     				logger.info("Adding qualys_scan_target tag to the image " + image);
     				listener.getLogger().println("Adding qualys specific docker tag to the image " + image);
     				try {
     					VirtualChannel channel2 = launcher.getChannel();
           				if (channel2 != null) {
-          					channel2.call(new TagImageSlaveCallable(image, imageId, dockerUrl, dockerCert, listener));
+          					channel2.call(new TagImageSlaveCallable(image, imageSha, dockerUrl, dockerCert, listener));
           				}
     				}catch(Exception e) {
     					e.printStackTrace(listener.getLogger());
@@ -1013,7 +1022,7 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     				}
     				//helper.tagTheImage(dockerClient, image, imageId);
     			} else {
-    				listener.getLogger().println(image + " has same image Id as one of the configured image: " + finalImagesList.get(imageId) + ". So processing it only once.");
+    				listener.getLogger().println(image + " has same image Id as one of the configured image: " + finalImagesList.get(imageSha) + ". So processing it only once.");
     			}
     			
     		}
