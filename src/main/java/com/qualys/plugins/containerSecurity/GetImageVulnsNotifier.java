@@ -982,24 +982,9 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     		String image = OriginalImage.trim();
     		String imageSha;
     		
-    		/*Matcher matcher = pattern.matcher(image);
-      		if (!matcher.find()){
-      			try {
-      				VirtualChannel channel2 = launcher.getChannel();
-      				imageId =  (channel2 == null ? null : channel2.call(new ImageIdExtractSlaveCallable(image, dockerUrl, dockerCert, listener)));
-      				//imageId = helper.fetchImageId(dockerClient, image);
-      			}catch(Exception e) {
-      				e.printStackTrace(listener.getLogger());
-      				throw e;
-      			}
-      		} else {
-      			imageId = image;
-      		}*/
-    		
     		try {
   				VirtualChannel channel2 = launcher.getChannel();
   				imageSha =  (channel2 == null ? null : channel2.call(new ImageShaExtractSlaveCallable(image, dockerUrl, dockerCert, listener)));
-  				//imageId = helper.fetchImageId(dockerClient, image);
   			}catch(Exception e) {
   				e.printStackTrace(listener.getLogger());
   				throw e;
@@ -1020,7 +1005,6 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     					e.printStackTrace(listener.getLogger());
     					throw e;
     				}
-    				//helper.tagTheImage(dockerClient, image, imageId);
     			} else {
     				listener.getLogger().println(image + " has same image Id as one of the configured image: " + finalImagesList.get(imageSha) + ". So processing it only once.");
     			}
