@@ -951,9 +951,6 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     	HashMap<String, String> finalImagesList = new HashMap<String, String>(); 
     	ArrayList<String> listOfImageIds = new ArrayList<String>();
     	
-    	String IMAGE_ID_REGEX = "^([A-Fa-f0-9]{12}|[A-Fa-f0-9]{64})$";
-		Pattern pattern = Pattern.compile(IMAGE_ID_REGEX);
-	
 		listener.getLogger().println("Checking if Qualys CS sensor is running on same instance using: " + dockerUrl + (StringUtils.isNotBlank(dockerCert) ? " & docker Cert path : " + dockerCert + "." : "") );
 		//Check if sensor is running on same instance where images are built and docker daemon is shared
 		
