@@ -66,20 +66,20 @@ public class DockerClientHelper {
 			
      }
 	    
-	public String fetchImageId(DockerClient dockerClient, String image) throws AbortException, UnknownHostException {
+	public String fetchImageSha(DockerClient dockerClient, String image) throws AbortException, UnknownHostException {
 		try {
 		InspectImageCmd inspect = dockerClient.inspectImageCmd(image);
 		String imageIdSha256 = inspect.exec().getId();
 		//buildLogger.println("#### Image sha256 for "+ image +" is = " + imageIdSha256);
 		
 		String imageIds[] = imageIdSha256.split(":");  //split by :
-		String first12char = imageIds[1].substring(0,12);
-		buildLogger.println("Image Id extracted for " + image + " = "+ first12char);
-		return first12char;
+		String imageSha = imageIds[1];
+		buildLogger.println("Image sha extracted for " + image + " = "+ imageSha);
+		return imageSha;
 		
 		}catch (Exception e) {
-			buildLogger.println("Failed to extract image Id associated with '" + image + "' ; Reason : " + e.getMessage());
-			throw new AbortException("Failed to extract image Id associated with '" + image + "'.");
+			buildLogger.println("Failed to extract image sha associated with '" + image + "' ; Reason : " + e.getMessage());
+			throw new AbortException("Failed to extract image sha associated with '" + image + "'.");
 		}
 	}
 	

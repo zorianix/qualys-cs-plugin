@@ -112,12 +112,12 @@ public class GetImageVulns {
         //create a list to hold the Future object associated with Callable
     	Map<String, Future<String>> list = new HashMap<String, Future<String>>();
         
-        for (String imageId : imageList.keySet()) {
+        for (String imageSha : imageList.keySet()) {
             //submit Callable tasks to be executed by thread pool
-        	Future<String> future = executor.submit(new GetImageVulnsCallable(taggingTime, imageId, qualysClient, listener, 
+        	Future<String> future = executor.submit(new GetImageVulnsCallable(taggingTime, imageSha, qualysClient, listener, 
         			pollingIntervalForVulns, vulnsTimeout, run.getArtifactsDir().getAbsolutePath(), isFailConditionsConfigured, auth));
             //add Future to the list, we can get return value using Future
-            list.put(imageId, future);
+            list.put(imageSha, future);
         }
         
         executor.shutdown();
@@ -132,9 +132,10 @@ public class GetImageVulns {
         boolean hasAtleastOneResult = false;
         List<String> otherExceptions = new ArrayList<String>();
         for(Map.Entry<String, String> entry : imageList.entrySet()) {
-        	String imageID = entry.getKey();
+        	String imageSha = entry.getKey();
+        	String imageID = imageSha.substring(0, 12);
         	String response = null;
-        	Future<String> future = list.get(imageID);
+        	Future<String> future = list.get(imageSha);
         	//JsonObject report = null;
         	try {
         		response = future.get();
@@ -222,7 +223,8 @@ public class GetImageVulns {
         //create report links
         try {
         	for(Map.Entry<String, String> entry : imageList.entrySet()) {
-            	String imageID = entry.getKey();
+        		String imageSha = entry.getKey();
+            	String imageID = imageSha.substring(0, 12);
             	String originalImageStr = entry.getValue();
             	String imageSHAStr = null;
             	if (imageSHA.has(imageID)) {
