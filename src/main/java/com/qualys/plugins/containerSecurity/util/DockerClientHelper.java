@@ -11,6 +11,8 @@ import org.apache.commons.lang.StringUtils;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.DockerCmdExecFactory;
+import com.github.dockerjava.api.command.InspectContainerResponse;
+import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
 import com.github.dockerjava.api.command.InspectImageCmd;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
@@ -101,6 +103,11 @@ public class DockerClientHelper {
 	  public boolean isCICDSensorUp(DockerClient dockerClient) throws AbortException {
 		  List<Container> containers = dockerClient.listContainersCmd().exec();
 		  for (Container container: containers) {
+			  InspectContainerResponse inspectContainer = dockerClient.inspectContainerCmd(container.getId()).exec();
+			  ContainerState state = inspectContainer.getState();
+			  if (state != null && state.getPaused()) {
+				  throw new AbortException("Qualys CS sensor container is in paused state. Sensor won't be able to scan the image. Please check the sensor container.");
+			  }
 			  Map<String, String> labels = container.getLabels();
 			  if (labels.get("VersionInfo") != null && labels.get("VersionInfo").contains("Qualys Sensor")) {
 				  return container.getCommand()!=null && container.getCommand().contains("cicd-deployed-sensor") ? true : false;
