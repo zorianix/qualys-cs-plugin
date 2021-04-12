@@ -951,9 +951,6 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
     	HashMap<String, String> finalImagesList = new HashMap<String, String>(); 
     	ArrayList<String> listOfImageIds = new ArrayList<String>();
     	
-    	String IMAGE_ID_REGEX = "^([A-Fa-f0-9]{12}|[A-Fa-f0-9]{64})$";
-		Pattern pattern = Pattern.compile(IMAGE_ID_REGEX);
-	
 		listener.getLogger().println("Checking if Qualys CS sensor is running on same instance using: " + dockerUrl + (StringUtils.isNotBlank(dockerCert) ? " & docker Cert path : " + dockerCert + "." : "") );
 		//Check if sensor is running on same instance where images are built and docker daemon is shared
 		
@@ -980,40 +977,33 @@ public class GetImageVulnsNotifier extends Notifier implements SimpleBuildStep {
 		
 		for (String OriginalImage : imageList) {
     		String image = OriginalImage.trim();
-    		String imageId;
+    		String imageSha;
     		
-    		Matcher matcher = pattern.matcher(image);
-      		if (!matcher.find()){
-      			try {
-      				VirtualChannel channel2 = launcher.getChannel();
-      				imageId =  (channel2 == null ? null : channel2.call(new ImageIdExtractSlaveCallable(image, dockerUrl, dockerCert, listener)));
-      				//imageId = helper.fetchImageId(dockerClient, image);
-      			}catch(Exception e) {
-      				e.printStackTrace(listener.getLogger());
-      				throw e;
-      			}
-      		} else {
-      			imageId = image;
-      		}
+    		try {
+  				VirtualChannel channel2 = launcher.getChannel();
+  				imageSha =  (channel2 == null ? null : channel2.call(new ImageShaExtractSlaveCallable(image, dockerUrl, dockerCert, listener)));
+  			}catch(Exception e) {
+  				e.printStackTrace(listener.getLogger());
+  				throw e;
+  			}
       		
-    		if (imageId != null) {
-    			if (!listOfImageIds.contains(imageId)) {
-    				listOfImageIds.add(imageId);
-    				finalImagesList.put(imageId, image);
+    		if (imageSha != null) {
+    			if (!listOfImageIds.contains(imageSha)) {
+    				listOfImageIds.add(imageSha);
+    				finalImagesList.put(imageSha, image);
     				logger.info("Adding qualys_scan_target tag to the image " + image);
     				listener.getLogger().println("Adding qualys specific docker tag to the image " + image);
     				try {
     					VirtualChannel channel2 = launcher.getChannel();
           				if (channel2 != null) {
-          					channel2.call(new TagImageSlaveCallable(image, imageId, dockerUrl, dockerCert, listener));
+          					channel2.call(new TagImageSlaveCallable(image, imageSha, dockerUrl, dockerCert, listener));
           				}
     				}catch(Exception e) {
     					e.printStackTrace(listener.getLogger());
     					throw e;
     				}
-    				//helper.tagTheImage(dockerClient, image, imageId);
     			} else {
-    				listener.getLogger().println(image + " has same image Id as one of the configured image: " + finalImagesList.get(imageId) + ". So processing it only once.");
+    				listener.getLogger().println(image + " has same image Id as one of the configured image: " + finalImagesList.get(imageSha) + ". So processing it only once.");
     			}
     			
     		}

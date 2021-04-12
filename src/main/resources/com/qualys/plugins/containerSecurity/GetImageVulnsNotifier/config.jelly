@@ -32,12 +32,12 @@
     	}
         
         .conditionTitle{
-    		 margin-bottom: -20px;
+    		 margin-bottom: -7px;
     		 margin-top: 15px;
     	}
     	
     	#severityTitle{
-    		margin-bottom: -36px;
+    		margin-bottom: -8px;
     	}
     	
     	#qidSevSection.severityBlock{

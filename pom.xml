@@ -14,7 +14,7 @@
   <packaging>hpi</packaging>
 
   <properties>
-	<jenkins.version>2.190.1</jenkins.version>
+	<jenkins.version>2.204.1</jenkins.version>
         <java.version>1.8</java.version>
     <java.level>8</java.level>
   </properties>
@@ -64,7 +64,7 @@
       <configuration>
         <skip>true</skip>
       </configuration>
-    </plugin>    
+    </plugin>  
     </plugins>
   </build>
 
@@ -103,18 +103,12 @@
   <dependency>
     <groupId>org.jenkins-ci.plugins.workflow</groupId>
     <artifactId>workflow-step-api</artifactId>
-    <version>2.7</version>
+    <version>2.13</version>
   </dependency>
   <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>4.5.2</version>
-  </dependency>
-  <dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>cloudbees-folder</artifactId>
-      <version>4.10</version>
-      <type>jar</type>
+      <version>4.5.13</version>
   </dependency>
   <dependency>
        <groupId>org.jenkins-ci.plugins</groupId>
@@ -123,20 +117,14 @@
        <optional>true</optional>
    </dependency>
    <dependency>
-       <groupId>org.jenkins-ci.plugins</groupId>
-       <artifactId>matrix-auth</artifactId>
-       <version>1.0.2</version>
-       <optional>true</optional>
-   </dependency>
-   <dependency>
 		<groupId>com.qualys</groupId>
         <artifactId>cs-plugin-common</artifactId>
-        <version>1.2.2</version>
+        <version>1.2.3</version>
 	</dependency>
   <dependency>
 		<groupId>com.aries</groupId>
 		<artifactId>docker-java-shaded</artifactId>
-		<version>3.0.14</version>
+		<version>3.1.1</version>
 	</dependency>
   
 </dependencies>
