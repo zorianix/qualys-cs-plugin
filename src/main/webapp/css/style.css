@@ -4,24 +4,7 @@
 	#main-panel{
 		margin-left:290px !important;
 	}
- 	.chart-legend li span{
-	    display: inline-block;
-	    width: 12px;
-	    height: 12px;
-	    margin-right: 5px;
-	}
-	
-	.chart-legend ul {
-		list-style-type: none;
-		padding:0;
-		width: 100%;
-		
-	}
-	.chart-legend ul li{
-  		display: inline;
-  		position: relative;
-   		display: inline-block;
-	}
+
 	.vulnschart {
 		float: left;
 		//width:33%;
@@ -39,7 +22,7 @@
 	.report-chart-div{
 		display:table;
 		width:100%;
-		margin-top: 20px;
+		margin-top: -30px;
 		height: 180px;
 		position: relative;
 	}
@@ -60,16 +43,6 @@
 	
 	.vulnschart-content-tiitle{
 		
-	}
-	
-	.chart-legend {
-		width:90px;
-		float:right;
-		position: absolute;
-	    top: 50%;
-	    height: 100px;
-	    margin-top: -50px;
-	    right: 0;
 	}
 	
 	.center{

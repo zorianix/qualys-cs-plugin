@@ -86,29 +86,39 @@ function drawTrendingChart(reportObject){
 	var ctx = c.getContext("2d");
 	
 	var data1 = { 
-					labels : ["Sev 5","Sev 4","Sev 3","Sev 2","Sev 1"], 
-					datasets : [
+					"labels" : ["Sev 5","Sev 4","Sev 3","Sev 2","Sev 1"], 
+					"datasets" : [
 								{ label : "Current Build", 
-									fillColor : "rgba(126, 183, 255, 0.7)", 
-									strokeColor : "rgba(126, 183, 255, 0.8)", 
-									highlightFill : "rgba(126, 183, 255, 0.75)", 
-									highlightStroke : "rgba(126, 183, 255, 1)", 
+									backgroundColor : "rgba(126, 183, 255, 1)", 
 									data : currentVulns ? currentVulns.reverse() : []
 								},
 								{ label : "Previous Build", 
-									fillColor : "rgba(192,192,192, 0.7)", 
-									strokeColor : "rgba(192,192,192, 0.8)", 
-									highlightFill : "rgba(192,192,192, 0.75)", 
-									highlightStroke : "rgba(192,192,192, 1)", 
+									backgroundColor : "rgba(192,192,192, 1)", 
 									data : (prevVulns && prevVulns != "null") ? prevVulns.reverse() : []
 								}
 				]};
 								
 	var options = {
-		scaleShowGridLines : false
+		plugins: {
+            legend: {
+                display: false
+            }
+        },
+		scales: {
+		  x: {
+			grid: {
+			  display: false
+			}
+		  },
+		  y: {
+			grid: {
+			  display: false
+			}
+		  }
+    	}
 	}
 	if(currentVulns && currentVulns.length > 0 ){
-		var barChart = new Chart(ctx).Bar(data1, options);
+		var barChart = new Chart(ctx, {type: 'bar', data: data1, options: options});
 	}else{
 		jQuery(".trending-chart-legend li").hide();
 		jQuery("div#trending div.report-chart-div").text("Unable to show Trending chart!");
@@ -118,11 +128,16 @@ function drawTrendingChart(reportObject){
 //End Trending chart
 
 function drawVulnsCharts(reportObject){
+	// ------Confirmed Vulnerabilities Chart
 	var d = reportObject.confirmedVulnsBySev;
 	var count = Array();
 	var severity = Array();
+	var show_tooltip = true;
 	
 	var potentialVulnsObj = reportObject.potentialVulnsBySev;
+	var c = jQuery("#sevVulns").get(0);
+	var ctx = c.getContext("2d");
+	
 	
 	var i = 0;
 	var total = 0;
@@ -132,13 +147,7 @@ function drawVulnsCharts(reportObject){
 	   total += count[i]; 
 	   i++;
 	}
-	var options = {
-	    //segmentShowStroke: false,
-	    animateRotate: true,
-	    animateScale: false,
-	    percentageInnerCutout: 50,
-	    tooltipTemplate: "<%= label %>"
-	}
+	
 	var colors = ["#E8E4AE", "#F4BB48", "#FAA23B", "#DE672A","#D61E1C"];
 	var labels = count; 
 	jQuery("#confTotCount").text(total);
@@ -147,45 +156,60 @@ function drawVulnsCharts(reportObject){
 		severity = ["1", "2", "3", "4", "5"];
 		labels = ["0", "0", "0", "0", "0"];	
 		colors = ["#B0BFc6", "#B0BFc6", "#B0BFc6", "#B0BFc6", "#B0BFc6"];
+		show_tooltip = false;
 	}
 	
-	var c = jQuery("#sevVulns").get(0);
-		var ctx = c.getContext("2d");
-	
-		var pieData = [
-			{
-			value: count[4].toString(),
-			label: "Sev " + severity[4].toString() + " (" + labels[4] + ")",
-			color: colors[4]
-			},
-			{
-			value: count[3].toString(),
-			label: "Sev " + severity[3].toString() + " (" + labels[3] + ")",
-			color: colors[3]
-			},
-			{
-			value: count[2].toString(),
-			label: "Sev " + severity[2].toString() + " (" + labels[2] + ")",
-			color: colors[2]
-			},
-			{
-			value: count[1].toString(),
-			label: "Sev " + severity[1].toString() + " (" + labels[1] + ")",
-			color: colors[1]
-			},
-			{
-			value: count[0].toString(),
-			label: "Sev " + severity[0].toString() + " (" + labels[0] + ")",
-			color: colors[0]
-			}
-		];
+	var options = {
+	    responsive: true,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'right'
+            },
+            tooltip: 
+            {
+              enabled: show_tooltip,
+              callbacks: 
+              {
+                label: function(context) 
+                {
+                    var label = context.label;
+                    return label;
+             	}     
+              }
+           }
+        }
+	};
 		
-		var chart = new Chart(ctx).Doughnut(pieData,options);		
-	jQuery("#pie-legend-div").append(chart.generateLegend());
+	var confirmedVulnsData = {
+		datasets : [
+			{
+			data : [count[4].toString(), count[3].toString(), count[2].toString(), count[1].toString(), count[0].toString()],
+			backgroundColor : [
+				colors[4],
+				colors[3],
+				colors[2],
+				colors[1],
+				colors[0]
+				]
+			}
+		],
+		labels: [
+			"Sev " + severity[4].toString() + " (" + labels[4] + ")",
+			"Sev " + severity[3].toString() + " (" + labels[3] + ")",
+			"Sev " + severity[2].toString() + " (" + labels[2] + ")",
+			"Sev " + severity[1].toString() + " (" + labels[1] + ")",
+			"Sev " + severity[0].toString() + " (" + labels[0] + ")",
+		]
+	};
+	var chart = new Chart(ctx, {type: 'doughnut', data: confirmedVulnsData, options: options});	
 
-	//Chart 2
+	// ------Potential Vulnerabilities Chart
 	count = Array();
 	severity = Array();
+	var c = jQuery("#typeVulns").get(0);
+	var ctx = c.getContext("2d");
+	
 	var i = 0;
 	total = 0;
 	for (var key in potentialVulnsObj) {
@@ -204,68 +228,63 @@ function drawVulnsCharts(reportObject){
 		severity = ["1", "2", "3", "4", "5"];
 		labels = ["0", "0", "0", "0", "0"];	
 		colors = ["#B0BFc6", "#B0BFc6", "#B0BFc6", "#B0BFc6", "#B0BFc6"];
+		show_tooltip = false;
 	}
-	var c = jQuery("#typeVulns").get(0);
-		var ctx = c.getContext("2d");
 	
-		var pieData = [
+	var potentialVulnsData = {
+		datasets : [
 			{
-			value: count[4].toString(),
-			label: "Sev " + severity[4].toString() + " (" + labels[4] + ")",
-			color: colors[4]
-			},
-			{
-			value: count[3].toString(),
-			label: "Sev " + severity[3].toString() + " (" + labels[3] + ")",
-			color: colors[3]
-			},
-			{
-			value: count[2].toString(),
-			label: "Sev " + severity[2].toString() + " (" + labels[2] + ")",
-			color: colors[2]
-			},
-			{
-			value: count[1].toString(),
-			label: "Sev " + severity[1].toString() + " (" + labels[1] + ")",
-			color: colors[1]
-			},
-			{
-			value: count[0].toString(),
-			label: "Sev " + severity[0].toString() + " (" + labels[0] + ")",
-			color: colors[0]
+			data : [count[4].toString(), count[3].toString(), count[2].toString(), count[1].toString(), count[0].toString()],
+			backgroundColor : [
+				colors[4],
+				colors[3],
+				colors[2],
+				colors[1],
+				colors[0]
+				]
 			}
-		];
-		
-		var chart = new Chart(ctx).Doughnut(pieData,options);		
-	jQuery("#pot-legend-div").append(chart.generateLegend());
+		],
+		labels: [
+			"Sev " + severity[4].toString() + " (" + labels[4] + ")",
+			"Sev " + severity[3].toString() + " (" + labels[3] + ")",
+			"Sev " + severity[2].toString() + " (" + labels[2] + ")",
+			"Sev " + severity[1].toString() + " (" + labels[1] + ")",
+			"Sev " + severity[0].toString() + " (" + labels[0] + ")",
+		]
+	}; 		
+	var chart = new Chart(ctx, {type: 'doughnut', data: potentialVulnsData, options: options});	
 
-	//Patchability Chart
+	// ------Patchability Chart
 	var patchableData = reportObject.patchability;
+	c = jQuery("#patchVulns").get(0);
+	ctx = c.getContext("2d");
+	
 	colors = ["#5D9933","#D61E1C" ];
 	if(! (patchableData['yes'] == '0' && patchableData['no'] == '0')){
 		count = [patchableData['yes'], patchableData['no']];
 		labels = count;
+		show_tooltip = false;
 	}else{
 		count = ["1", "1"];
 		labels = ["0", "0"];
 		colors = ["#B0BFC6", "#B0BFC6"];
 	}
-	  var patchVulnsdata = [
+  	var patchVulnsdata = {
+		datasets : [
 			{
-	   		value: count[0],
-	   		label: "Yes " + "(" + labels[0] + ")",
-	   		color: colors[0]
-			},
-			{
-	   		value: count[1],
-	   		label: "No " + "(" + labels[1] + ")" ,
-	   		color: colors[1]
+			data : [count[1].toString(), count[0].toString()],
+			backgroundColor : [
+				colors[1],
+				colors[0]
+				]
 			}
-		];
-		c = jQuery("#patchVulns").get(0);
-		ctx = c.getContext("2d");
-	var patchVulnsChart = new Chart(ctx).Doughnut(patchVulnsdata, options);		
-	jQuery("#patchVulns-legend-div").append(patchVulnsChart.generateLegend());
+		],
+		labels: [
+			"No " + "(" + labels[1] + ")" ,
+			"Yes " + "(" + labels[0] + ")",
+		]
+	};
+	var patchVulnsChart = new Chart(ctx, {type: 'doughnut', data: patchVulnsdata, options: options});
 }
 
 function drawBuildSummary(reportObject){
