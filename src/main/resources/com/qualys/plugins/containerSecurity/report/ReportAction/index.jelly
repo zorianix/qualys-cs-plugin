@@ -208,7 +208,7 @@
 				<div class="vulnschart" id="sev-don-chart"> 
 					<div class="vulnschart-content">
 						<div class="report-title center vulnschart-content-tiitle"> Confirmed Vulnerabilities (<span id="confTotCount"></span>) </div>
-						<div class="report-chart-div">
+						<div class="report-chart-div canvasChart">
 							<canvas id="sevVulns" width="180" height="180" ></canvas>
 						</div>
 					</div>
@@ -216,7 +216,7 @@
 				<div class="vulnschart" id="det-bar-chart">
 					<div class="vulnschart-content">
 						<div class="report-title center vulnschart-content-tiitle">Potential Vulnerabilities (<span id="potTotCount"></span>)</div>
-						<div class="report-chart-div">
+						<div class="report-chart-div canvasChart">
 							<canvas id="typeVulns" width="180" height="180"></canvas>
 						</div>
 					</div>
@@ -224,7 +224,7 @@
 				<div class="vulnschart" id="pat-don-chart"> 
 					<div class="vulnschart-content">
 						<div class="report-title center vulnschart-content-tiitle">Patchability </div>
-						<div class="report-chart-div">
+						<div class="report-chart-div canvasChart">
 							<canvas id="patchVulns" width="180" height="180"></canvas>
 						</div>
 					</div>

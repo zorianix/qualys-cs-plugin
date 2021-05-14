@@ -22,10 +22,14 @@
 	.report-chart-div{
 		display:table;
 		width:100%;
-		margin-top: -30px;
 		height: 180px;
 		position: relative;
 	}
+	
+	.canvasChart {
+		margin-top:-30px;
+	}
+	
 	#sevVulns{
 		float:left;
 	}
