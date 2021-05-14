@@ -30,8 +30,7 @@
  <link href="${resURL}/plugin/qualys-cs/css/style.css" rel="stylesheet" type="text/css"/>
  <script type="text/javascript" src="${resURL}/plugin/qualys-cs/js/jquery-3.4.1.min.js"></script>
  <script type="text/javascript" src="${resURL}/plugin/qualys-cs/datatable/js/jquery.dataTables.min.js"></script>
- <script type="text/javascript" src="${resURL}/plugin/qualys-cs/js/chart.min.js"></script>
- <script type="text/javascript" src="${resURL}/plugin/qualys-cs/js/chart-1.0.1.min.js"></script>
+ <script type="text/javascript" src="${resURL}/plugin/qualys-cs/js/chart-3.2.1.min.js"></script>
  <script type="text/javascript" src="${resURL}/plugin/qualys-cs/js/report.js"></script>
 
 <style> 
@@ -209,27 +208,24 @@
 				<div class="vulnschart" id="sev-don-chart"> 
 					<div class="vulnschart-content">
 						<div class="report-title center vulnschart-content-tiitle"> Confirmed Vulnerabilities (<span id="confTotCount"></span>) </div>
-						<div class="report-chart-div">
+						<div class="report-chart-div canvasChart">
 							<canvas id="sevVulns" width="180" height="180" ></canvas>
-							<div id="pie-legend-div" class="chart-legend" ></div>
 						</div>
 					</div>
 				</div>
 				<div class="vulnschart" id="det-bar-chart">
 					<div class="vulnschart-content">
 						<div class="report-title center vulnschart-content-tiitle">Potential Vulnerabilities (<span id="potTotCount"></span>)</div>
-						<div class="report-chart-div">
+						<div class="report-chart-div canvasChart">
 							<canvas id="typeVulns" width="180" height="180"></canvas>
-							<div id="pot-legend-div" class="chart-legend" ></div>
 						</div>
 					</div>
 				</div>
 				<div class="vulnschart" id="pat-don-chart"> 
 					<div class="vulnschart-content">
 						<div class="report-title center vulnschart-content-tiitle">Patchability </div>
-						<div class="report-chart-div">
+						<div class="report-chart-div canvasChart">
 							<canvas id="patchVulns" width="180" height="180"></canvas>
-							<div id="patchVulns-legend-div" class="chart-legend" ></div>
 						</div>
 					</div>
 				</div>
