@@ -3,7 +3,6 @@ package com.qualys.plugins.containerSecurity;
 import java.io.IOException;
 import java.io.Serializable;
 
-import com.github.dockerjava.api.DockerClient;
 import com.qualys.plugins.containerSecurity.util.DockerClientHelper;
 
 import hudson.model.TaskListener;
@@ -26,9 +25,8 @@ public class TagImageSlaveCallable extends MasterToSlaveCallable<String, IOExcep
 	}
 	
 	public String call() throws IOException {
-		DockerClientHelper helper = new DockerClientHelper(listener.getLogger());
-		DockerClient dockerClient = helper.getDockerClient(dockerUrl, dockerCert);
-		helper.tagTheImage(dockerClient, image, imageId);
+		DockerClientHelper helper = new DockerClientHelper(listener.getLogger(), dockerUrl, dockerCert);
+		helper.tagImage(image, imageId);
 		return "";
 	}
 }
