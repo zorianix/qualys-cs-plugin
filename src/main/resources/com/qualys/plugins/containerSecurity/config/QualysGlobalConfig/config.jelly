@@ -48,7 +48,10 @@
     <f:section title="Qualys Container Security">
 		    <f:block> <div class="qualys-section-header"> &#160; &#160; &#160; &#160; &#160; &#160; &#160;  API Login  </div> 
 		    	<div> &#160; &#160; &#160; &#160; &#160; &#160; &#160;  Provide details for accessing the Qualys Container Security API.  </div> <br /> </f:block>
-				<f:entry title="&#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;  API Server URL:" description="Example: https://qualysapi.qualys.com" field="apiServer" style="width: 50%; min-width: 320px;">
+		    	<f:entry title="Your Qualys Portal" field="platform" help="/plugin/qualys-cs/help/platform.html">
+			        <f:select name="platform" style="width: 35%;" id="platform" />
+			    </f:entry>
+				<f:entry title="&#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;  API Server URL:" description="Example: https://qualysapi.qualys.com" id="apiServer" field="apiServer" style="width: 50%; min-width: 320px;">
 			        <f:textbox style="width: 50%; min-width: 320px;" />
 			    </f:entry>
 			    <f:entry field="credentialsId" title="&#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;  ${%Credentials}">
@@ -73,7 +76,7 @@
 						</f:entry>
 				    </div></f:block> 
 			    </f:optionalBlock>
-			    <f:validateButton title="Test Connection" progress="Testing..." method="checkConnection" with="apiServer,credentialsId,proxyServer,proxyPort,proxyCredentialsId,useProxy"/>
+			    <f:validateButton title="Test Connection" progress="Testing..." method="checkConnection" with="platform,apiServer,credentialsId,proxyServer,proxyPort,proxyCredentialsId,useProxy"/>
 			<f:block> <div class="qualys-section-header"> &#160; &#160; &#160; &#160; &#160; &#160; &#160;  Data Collection  </div>
 				<div>&#160; &#160; &#160; &#160; &#160; &#160; &#160;  Qualys vulnerability data will be collected per these settings. For each enter a value in seconds or an expression like 2*60*60 for 2 hours or 2*60 for 2 minutes. <br /> </div> 
 				    <br /><div>&#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; Frequency</div>
@@ -270,6 +273,34 @@
 		function cvssOptionChanged(){
 			document.getElementsByName("cvssThreshold")[0].value = "0.0";
 		}
+		
+		
+		
+		var apiServerTr = document.getElementsByName("_.apiServer")[0].parentNode.parentNode;
+		  
+		  
+		apiServerTr.style.display = 'none';
+		//apiServerTr.next('tr').style.display = 'none';
+		  
+		  
+		  
+		  
+	    document.getElementById("platform").onchange = function(){
+			if(this.value === "PCP"){
+				apiServerTr.style.display = 'table-row';
+				//apiServerTr.previous('tr').style.display = 'table-row';
+				//apiServerTr.next('tr').style.display = 'table-row';
+			}else{
+				apiServerTr.style.display = 'none';
+				//apiServerTr.previous('tr').style.display = 'none';
+				//apiServerTr.next('tr').style.display = 'none';
+			}
+		}
+		
+		if(document.getElementById("platform").value == "PCP"){
+	    	apiServerTr.style.display = 'table-row';
+			//apiServerTr.next().style.display='table-row';
+	    }
 		
 	</script>
 	
