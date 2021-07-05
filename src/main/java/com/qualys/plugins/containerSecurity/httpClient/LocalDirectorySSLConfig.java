@@ -64,7 +64,7 @@ public class LocalDirectorySSLConfig implements Serializable {
 				TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(tmfAlgorithm);
 				trustManagerFactory.init(CertificateUtils.createTrustStore(capem));
 
-				SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+				SSLContext sslContext = SSLContext.getInstance("TLSv1.3");
 				sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
 
 				return sslContext;

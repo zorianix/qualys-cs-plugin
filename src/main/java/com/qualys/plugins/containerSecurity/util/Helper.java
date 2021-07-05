@@ -66,6 +66,10 @@ public class Helper{
     	Map<String, String> platform8 = new HashMap <String, String>();
     	platform8.put("name", "CANADA Platform"); platform8.put("code", "CANADA_PLATFORM"); platform8.put("url", "https://qualysapi.qg1.apps.qualys.ca");
     	platform8.put("portal", "https://qualysguard.qg1.apps.qualys.ca"); aList.put("CANADA_PLATFORM", platform8);
+
+    	Map<String, String> platform4 = new HashMap <String, String>();
+    	platform4.put("name", "AE Platform"); platform4.put("code", "AE_Platform"); platform4.put("url", "https://qualysapi.qg1.apps.qualys.ae");
+    	platform4.put("portal", "https://qualysguard.qg1.apps.qualys.ae"); aList.put("AE_Platform", platform4);
     	
     	Map<String, String> platform9 = new HashMap <String, String>();
     	platform9.put("name", "Private Cloud Platform"); platform9.put("code", "PCP"); platform9.put("url", "");
