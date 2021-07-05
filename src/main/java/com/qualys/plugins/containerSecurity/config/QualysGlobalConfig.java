@@ -4,6 +4,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import hudson.util.ListBoxModel.Option;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,6 +49,7 @@ import com.qualys.plugins.common.QualysClient.QualysCSTestConnectionResponse;
 public class QualysGlobalConfig extends GlobalConfiguration {
 	
 	private String apiServer;
+	private String platform;
 	private String credentialsId;
 	private String pollingInterval;
     private String vulnsTimeout;
@@ -158,6 +161,25 @@ public class QualysGlobalConfig extends GlobalConfiguration {
                 .withMatching(CredentialsMatchers.withId(proxyCredentialsId));
     }
     
+    public ListBoxModel doFillPlatformItems() {
+    	ListBoxModel model = new ListBoxModel();
+    	for(Map<String, String> platform: getPlatforms()) {
+    		Option e = new Option(platform.get("name"), platform.get("code"));
+        	model.add(e);
+    	}
+    	return model;
+    }
+    
+    public List<Map<String, String>> getPlatforms() {
+    	List<Map<String, String>> result = new ArrayList<Map<String, String>>();
+    	for (Map.Entry<String, Map<String, String>> platform : Helper.platformsList.entrySet()) {
+            Map<String, String>obj = platform.getValue();
+            result.add(obj);
+        }
+        return result;
+    }
+    
+    
     public FormValidation doCheckCveList(@QueryParameter String cveList) {
     	if(! Helper.isValidCVEList(cveList)) {
     		return FormValidation.error("Enter valid CVEs!");
@@ -166,7 +188,7 @@ public class QualysGlobalConfig extends GlobalConfiguration {
     }
     
     @POST
-    public FormValidation doCheckConnection(@QueryParameter String apiServer, @QueryParameter String credentialsId, @QueryParameter String proxyServer, @QueryParameter String proxyPort,
+    public FormValidation doCheckConnection(@QueryParameter String platform, @QueryParameter String apiServer, @QueryParameter String credentialsId, @QueryParameter String proxyServer, @QueryParameter String proxyPort,
     		@QueryParameter String proxyCredentialsId, @QueryParameter boolean useProxy, @AncestorInPath Item item) {
     	Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
     	String apiUser = "";
@@ -201,6 +223,11 @@ public class QualysGlobalConfig extends GlobalConfiguration {
             	
     	try {
     		apiServer = apiServer.trim();
+    		if(!platform.equalsIgnoreCase("pcp")) {
+        		Map<String, String> platformObj = Helper.platformsList.get(platform);
+        		apiServer = platformObj.get("url");
+        	}
+    		logger.info("Using qualys API Server URL: " + apiServer);
     		FormValidation apiServerValidation = doCheckApiServer(apiServer);
     		FormValidation proxyServerValidation = doCheckProxyServer(proxyServer);
     		FormValidation proxyPortValidation = doCheckProxyPort(proxyPort);
@@ -541,7 +568,14 @@ public class QualysGlobalConfig extends GlobalConfiguration {
     	this.apiServer = arg.trim();
     }
     
+    public String getPlatform() {
+        return platform;
+    }
     
+    public void setPlatform(String platform) {
+        this.platform = platform;
+    }
+
     
     public void setPollingInterval(String poll) {
     	this.pollingInterval = poll;
