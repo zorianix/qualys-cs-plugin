@@ -88,56 +88,51 @@ public class DockerClientHelper {
 			throw new AbortException("Socket file does not exist: " + dockerURL);
 		}
 
-		try (final Socket socket = new UnixDomainSocket(dockerURL)) {
+		final Socket socket = new UnixDomainSocket(dockerURL);
 
-			try (final OutputStream os = socket.getOutputStream()) {
-				if (method.toLowerCase().equals("get")) {
-					os.write(get(api).getBytes(StandardCharsets.UTF_8));
-				}
-				if (method.toLowerCase().equals("post")) {
-					os.write(post(api).getBytes(StandardCharsets.UTF_8));
-				}
-
-			} catch (Exception e) {
-				for (StackTraceElement traceElement : e.getStackTrace())
-					logger.info("\tat " + traceElement);
-
-				buildLogger.println("API call failed using socket: " + e.getMessage());
-				throw new AbortException("API call failed using socket: " + e.getMessage());
+		try (final OutputStream os = socket.getOutputStream()) {
+			if (method.toLowerCase().equals("get")) {
+				os.write(get(api).getBytes(StandardCharsets.UTF_8));
 			}
-
-			try (final BufferedReader response = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-				String line;
-				long len = -1;
-				while ((line = response.readLine()) != null) {
-					if (line.toLowerCase().startsWith("content-length:")) {
-						len = Long.parseLong(line.substring("content-length:".length()).trim());
-						if (len == 0) {
-							break;
-						}
-					} else if (line.startsWith("HTTP/1.1 ")) {
-						apiResponseCode = line.split(" ")[1];
-					} else if (line.toLowerCase().startsWith("{") || line.toLowerCase().startsWith("[")) {
-						outputData = line;
-						break;
-					}
-				}
-			} catch (Exception e) {
-				for (StackTraceElement traceElement : e.getStackTrace())
-					logger.info("\t Exception occurred at " + traceElement);
-
-				buildLogger.println("Error reading response from socket: " + e.getMessage());
-				throw new AbortException("Error reading response from socket: " + e.getMessage());
+			if (method.toLowerCase().equals("post")) {
+				os.write(post(api).getBytes(StandardCharsets.UTF_8));
 			}
 
 		} catch (Exception e) {
+			socket.close();
+			for (StackTraceElement traceElement : e.getStackTrace())
+				logger.info("\tat " + traceElement);
+
+			buildLogger.println("API call failed using socket: " + e.getMessage());
+			throw new AbortException("API call failed using socket: " + e.getMessage());
+		}
+
+		try (final BufferedReader response = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+			String line;
+			long len = -1;
+			while ((line = response.readLine()) != null) {
+				if (line.toLowerCase().startsWith("content-length:")) {
+					len = Long.parseLong(line.substring("content-length:".length()).trim());
+					if (len == 0) {
+						break;
+					}
+				} else if (line.startsWith("HTTP/1.1 ")) {
+					apiResponseCode = line.split(" ")[1];
+				} else if (line.toLowerCase().startsWith("{") || line.toLowerCase().startsWith("[")) {
+					outputData = line;
+					break;
+				}
+			}
+		} catch (Exception e) {
+			socket.close();
 			for (StackTraceElement traceElement : e.getStackTrace())
 				logger.info("\t Exception occurred at " + traceElement);
 
-			buildLogger.println("Socket error: " + e.getMessage());
-			throw new AbortException("Socket error: " + e.getMessage());
+			buildLogger.println("Error reading response from socket: " + e.getMessage());
+			throw new AbortException("Error reading response from socket: " + e.getMessage());
 		}
-
+		socket.close();
+		
 		json_response.addProperty("responseCode", apiResponseCode);
 		if (outputData != null) {
 			JsonElement jelement = JsonParser.parseString(outputData);
