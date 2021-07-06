@@ -88,13 +88,14 @@
 			}
 			document.getElementsByName("useGlobalConfig")[0].addEventListener("click", configClicked, false);
 			document.getElementsByName("useLocalConfig")[0].addEventListener("click", configClicked, false);
+			
 			document.getElementById("excludeBy").addEventListener("change", excludeOptionChanged, true);
 			if("${instance.excludeBy}" === "cve") document.getElementById("optionCve").selected= true;
 			if("${instance.excludeBy}" === "qid") document.getElementById("optionQid").selected= true;
 			
 			document.getElementById("cvssVersion").addEventListener("change", cvssOptionChanged, true);
 			if("${instance.cvssVersion}" === "2") document.getElementById("optionCvssV2").selected= true;
-			if("${instance.cvssVersion}" === "3") document.getElementById("optionCvssV3").selected= true;		
+			if("${instance.cvssVersion}" === "3") document.getElementById("optionCvssV3").selected= true;
 		};
 		
 		function cvssOptionChanged(){
@@ -108,6 +109,9 @@
 		function configClicked(e){
 			var checkbx1 = document.getElementsByName("useGlobalConfig")[0];
 			var checkbx2 = document.getElementsByName("useLocalConfig")[0];
+			if(checkbx2.checked == true){
+				updateApiServer();
+			}
 			if(this.attributes.id.value == checkbx2.attributes.id.value){
 			    if(!checkbx2.checked){
 			    	checkbx2.checked = true;
@@ -124,8 +128,33 @@
 			    checkbx1.checked = true;
 			    return false;
 			}
+			
 		}
 		
+		function updateApiServer() {
+			if (document.getElementById("platform").onchange == null) {
+				var apiServerTr = document.getElementsByName("_.apiServer")[0].parentNode.parentNode;
+				apiServerTr.style.display = 'none';
+				//apiServerTr.next('tr').style.display = 'none';
+		
+			    document.getElementById("platform").onchange = function(){
+					if(this.value === "PCP"){
+						apiServerTr.style.display = 'table-row';
+						//apiServerTr.previous('tr').style.display = 'table-row';
+						//apiServerTr.next('tr').style.display = 'table-row';
+					}else{
+						apiServerTr.style.display = 'none';
+						//apiServerTr.previous('tr').style.display = 'none';
+						//apiServerTr.next('tr').style.display = 'none';
+					}
+				}
+				
+				if(document.getElementById("platform").value == "PCP"){
+			    	apiServerTr.style.display = 'table-row';
+					//apiServerTr.next().style.display='table-row';
+			    }
+		    }
+		}
 	</script>
     
     
@@ -315,33 +344,6 @@
 	</f:section>
 	
 	<script type="text/javascript">
-	
-	var apiServerTr = document.getElementsByName("_.apiServer")[0].parentNode.parentNode;
-		  
-		  
-		apiServerTr.style.display = 'none';
-		//apiServerTr.next('tr').style.display = 'none';
-		  
-		  
-		  
-		  
-	    document.getElementById("platform").onchange = function(){
-			if(this.value === "PCP"){
-				apiServerTr.style.display = 'table-row';
-				//apiServerTr.previous('tr').style.display = 'table-row';
-				//apiServerTr.next('tr').style.display = 'table-row';
-			}else{
-				apiServerTr.style.display = 'none';
-				//apiServerTr.previous('tr').style.display = 'none';
-				//apiServerTr.next('tr').style.display = 'none';
-			}
-		}
-		
-		if(document.getElementById("platform").value == "PCP"){
-	    	apiServerTr.style.display = 'table-row';
-			//apiServerTr.next().style.display='table-row';
-	    }
-		
 	</script>
 	
 </j:jelly>
