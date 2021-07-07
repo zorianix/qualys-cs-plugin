@@ -44,6 +44,7 @@ public class LocalDirectorySSLConfig implements Serializable {
 			try {
 
 				Security.addProvider(new BouncyCastleProvider());
+				SSLContext sslContext = null;
 
 				String caPemPath = dockerCertPath + File.separator + "ca.pem";
 				String keyPemPath = dockerCertPath + File.separator + "key.pem";
@@ -65,18 +66,18 @@ public class LocalDirectorySSLConfig implements Serializable {
 
 				try
                 {
-					SSLContext sslContext = SSLContext.getInstance("TLSv1.3");
-					sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
-					return sslContext;
+					sslContext = SSLContext.getInstance("TLSv1.3");
                 }
                 catch(Exception e)
                 {
                     System.out.println(e.getMessage());
-                    SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
-                    sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
-                    return sslContext;
+                    sslContext = SSLContext.getInstance("TLSv1.2");
                 }
-				
+				if (sslContext != null) {
+					sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
+				}
+				return sslContext;
+
 
 			} catch (Exception e) {
 				throw new Exception(e.getMessage(), e);

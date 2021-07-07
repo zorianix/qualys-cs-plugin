@@ -168,6 +168,9 @@ public class DockerClientHelper {
 						socketFactoryRegistry = socketFactoryRegistryBuilder
 								.register("https", new SSLConnectionSocketFactory(sslContext)).build();
 					}
+					else {
+						throw new AbortException("Unable to find SSL Context");
+					}
 				} catch (Exception e) {
 					throw new RuntimeException(e);
 				}
