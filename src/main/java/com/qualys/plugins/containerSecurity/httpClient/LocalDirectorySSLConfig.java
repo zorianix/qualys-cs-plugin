@@ -22,7 +22,6 @@ import com.qualys.plugins.containerSecurity.util.CertificateUtils;
  * SSL Config from local files.
  */
 public class LocalDirectorySSLConfig implements Serializable {
-
 	private static final long serialVersionUID = -4736328026418377358L;
 
 	private final String dockerCertPath;
@@ -45,6 +44,7 @@ public class LocalDirectorySSLConfig implements Serializable {
 			try {
 
 				Security.addProvider(new BouncyCastleProvider());
+				SSLContext sslContext = null;
 
 				String caPemPath = dockerCertPath + File.separator + "ca.pem";
 				String keyPemPath = dockerCertPath + File.separator + "key.pem";
@@ -64,10 +64,19 @@ public class LocalDirectorySSLConfig implements Serializable {
 				TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(tmfAlgorithm);
 				trustManagerFactory.init(CertificateUtils.createTrustStore(capem));
 
-				SSLContext sslContext = SSLContext.getInstance("TLSv1.3");
-				sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
-
+				try
+                {
+					sslContext = SSLContext.getInstance("TLSv1.3");
+                }
+                catch(Exception e)
+                {
+                    sslContext = SSLContext.getInstance("TLSv1.2");
+                }
+				if (sslContext != null) {
+					sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
+				}
 				return sslContext;
+
 
 			} catch (Exception e) {
 				throw new Exception(e.getMessage(), e);
