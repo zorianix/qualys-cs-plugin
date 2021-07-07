@@ -70,7 +70,6 @@ public class LocalDirectorySSLConfig implements Serializable {
                 }
                 catch(Exception e)
                 {
-                    System.out.println(e.getMessage());
                     sslContext = SSLContext.getInstance("TLSv1.2");
                 }
 				if (sslContext != null) {
