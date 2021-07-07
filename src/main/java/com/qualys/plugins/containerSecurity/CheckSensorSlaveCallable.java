@@ -2,7 +2,6 @@ package com.qualys.plugins.containerSecurity;
 
 import java.io.IOException;
 import java.io.Serializable;
-
 import com.qualys.plugins.containerSecurity.util.DockerClientHelper;
 
 import hudson.model.TaskListener;
