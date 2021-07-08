@@ -55,11 +55,12 @@ public class CertificateUtils {
 		PrivateKey privateKey = loadPrivateKey(keypem);
 		requireNonNull(privateKey);
 		List<Certificate> privateCertificates = loadCertificates(certpem);
+		String key = "docker";
 
 		KeyStore keyStore = KeyStore.getInstance("JKS");
 		keyStore.load(null);
 
-		keyStore.setKeyEntry("docker", privateKey, "docker".toCharArray(),
+		keyStore.setKeyEntry(key, privateKey, key.toCharArray(),
 				privateCertificates.toArray(new Certificate[privateCertificates.size()]));
 
 		return keyStore;
