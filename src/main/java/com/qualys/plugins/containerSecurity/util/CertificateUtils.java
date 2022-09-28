@@ -33,6 +33,7 @@ import static java.util.Objects.requireNonNull;
 
 public class CertificateUtils {
 	private static final Logger LOG = LoggerFactory.getLogger(CertificateUtils.class);
+	private static final String DOCKER="docker";
 
 	private CertificateUtils() {
 		// utility class
@@ -59,7 +60,7 @@ public class CertificateUtils {
 		KeyStore keyStore = KeyStore.getInstance("JKS");
 		keyStore.load(null);
 
-		keyStore.setKeyEntry("docker", privateKey, "docker".toCharArray(),
+		keyStore.setKeyEntry(DOCKER, privateKey, DOCKER.toCharArray(),
 				privateCertificates.toArray(new Certificate[privateCertificates.size()]));
 
 		return keyStore;

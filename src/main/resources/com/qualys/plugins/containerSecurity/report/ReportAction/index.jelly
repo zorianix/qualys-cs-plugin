@@ -28,7 +28,7 @@
       
  <link href="${resURL}/plugin/qualys-cs/datatable/css/jquery.dataTables.min.css" rel="stylesheet" type="text/css"/>
  <link href="${resURL}/plugin/qualys-cs/css/style.css" rel="stylesheet" type="text/css"/>
- <script type="text/javascript" src="${resURL}/plugin/qualys-cs/js/jquery-3.4.1.min.js"></script>
+ <script type="text/javascript" src="${resURL}/plugin/qualys-cs/js/jquery-3.5.0.min.js"></script>
  <script type="text/javascript" src="${resURL}/plugin/qualys-cs/datatable/js/jquery.dataTables.min.js"></script>
  <script type="text/javascript" src="${resURL}/plugin/qualys-cs/js/chart-3.2.1.min.js"></script>
  <script type="text/javascript" src="${resURL}/plugin/qualys-cs/js/report.js"></script>
